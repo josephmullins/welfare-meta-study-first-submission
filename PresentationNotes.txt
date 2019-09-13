@@ -1,0 +1,10 @@
+# ---- JPE Conference: September ----- #
+- Jim:
+-- connection to NIT experiments from 70s (point to learn about elasticities)
+-- Do we have substitution bias?
+-- How many people denied the treatment? What were the particulars here?
+-- Issues with heterogeneity, need to think about this across sites.
+-- Using observables more
+
+- Sutanuka (Roy):
+-- assumption of exchangeability across experiments
