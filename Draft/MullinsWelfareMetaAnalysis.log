@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2018.10.13)  17 SEP 2019 14:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2018.10.13)  19 SEP 2019 17:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -835,39 +835,39 @@ LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <7> not available
 (Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 57.
  [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2] [3]
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 144.
-
-Overfull \hbox (19.9778pt too wide) detected at line 159
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 69.
+ [2] [3] [4] [5]
+Overfull \hbox (19.9778pt too wide) detected at line 200
 []\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 ^^R[]\OT1/cmr/m/n/10.95 ) = \OML/cmm/
 m/it/10.95 ^^N[] [] \OT1/cmr/m/n/10.95 + \OML/cmm/m/it/10.95 ^^N[] []\OT1/cmr/m
 /n/10.95 (\OML/cmm/m/it/10.95 ^^R[]\OT1/cmr/m/n/10.95 )
  []
 
-[4] [5]
+[6]
 
 Package caption Warning: Unused \captionsetup[table] on input line 17.
 See the caption package documentation for explanation.
 
-[6]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 208.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 208.
+[7]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 249.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 249.
  (./MullinsWelfareMetaAnalysis.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 208.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 208.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 249.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 249.
 Package rerunfilecheck Info: File `MullinsWelfareMetaAnalysis.out' has not chan
 ged.
-(rerunfilecheck)             Checksum: 92991B0F8AC033653E671D5E31F590DF;831.
+(rerunfilecheck)             Checksum: 1458141922E6A9971302D249F6FFFC0F;1003.
  ) 
 Here is how much of TeX's memory you used:
- 19341 strings out of 494923
- 348674 string characters out of 6180741
+ 19348 strings out of 494923
+ 348775 string characters out of 6180741
  423716 words of memory out of 5000000
- 22275 multiletter control sequences out of 15000+600000
+ 22277 multiletter control sequences out of 15000+600000
  23555 words of font info for 87 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 55i,11n,54p,1238b,348s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 55i,11n,54p,1238b,390s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texl
@@ -883,10 +883,10 @@ s/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
 hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/te
 xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on MullinsWelfareMetaAnalysis.pdf (6 pages, 185148 bytes).
+Output written on MullinsWelfareMetaAnalysis.pdf (7 pages, 190000 bytes).
 PDF statistics:
- 169 PDF objects out of 1000 (max. 8388607)
- 143 compressed objects within 2 object streams
- 26 named destinations out of 1000 (max. 500000)
- 125 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 186 PDF objects out of 1000 (max. 8388607)
+ 159 compressed objects within 2 object streams
+ 31 named destinations out of 1000 (max. 500000)
+ 141 words of extra memory for PDF output out of 10000 (max. 10000000)
 

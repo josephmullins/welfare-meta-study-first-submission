@@ -61,7 +61,28 @@
 \section{Introduction}
 
 \section{Model}
-\subsection{Technology}
+We assume that time is discrete and indexed by $t$. We assume that the child's skills are malleable for $T$ periods, at which point the investment problem ends. In this model, one period is equal to one year. We will assume that each of this periods consists of $L$ sub-periods. This is to allow for the fact that each mother may spend a portion of each week working, and will solicit external care for this part of the week. Accordingly, we set $L=112$, to represent 112 hours in a week.
+
+\subsection{Choices and Constraints}
+In each period, $t$, the mother chooses:
+\begin{itemize}
+\item How much to work, $h\in\{0,20,40\}$.
+\item For the portion of the week not spent working, a per-hour money investment in the child, $x_m$, and the fraction this time invested in the child, $\tau_m$.
+\item For the portion of the week spent working, a per-hour amount of childcare investment, $I_c$.
+\item The fraction of hours of spent not working dedicated to housework, $q$.
+\item Whether to participate in the welfare program or not, $p$.
+\end{itemize}
+Given income from program participation and work, $Y(h,p)$, the constraints are:
+\begin{eqnarray}
+\tau_m + q \leq 1 \\
+C + (L-h)x_m + hp_cI_c \leq Y(h,p) + m(L-h)q
+\end{eqnarray}
+Here, the first equation gives the time constraint, which can be written per hour spent not working, and the budget constraint. Notice that housework, $(L-h)q$ is converted to material resources at a linear rate, $m$.
+We can combine these equations into one resource constraint:
+\[ C + (L-h)(x_m + m\tau_m) + hp_cI_c \leq Y(h,p) + m(L-h) \]
+Next, we will introduce the technology of skill formation and show that, under the assumption that mothers combine time and money investments optimally, we can re-write this budget constraint in terms of aggregate per-hour home investment, $I_m$.
+
+\subsection{Technology and Cost Minimization}
 First, let's introduce a general technology which allows the possibility that investments may not be perfectly substitutable across intra-time periods. Suppose that there are L stages within time period $t$. We define production with the following three equations:
 \begin{eqnarray}
 \theta_{t+1} = \theta_t^{\delta_\theta} I_t^{\delta_I} \\
@@ -70,9 +91,29 @@ I_{lt} = z_{lt}\left(\phi x_{lt}^\rho + (1-\phi) \tau_{lt}^\rho \right)^{1/\rho}
 \end{eqnarray}
 where $x$ are expenditures on investment goods and $\tau$ is time investment. My expectation is that $0<\eta\leq 1$, but in principle this will be decided by the data. $z_{lt}$ will vary across periods based on who is caring for the child. For example, we can assume that mothers have a specific factor productivity, $z_{mt}$, while the care option they use will have another $z_{ct}$.
 
-For expositional purposes, let's just assume that $L=2$ and that mothers can choose to spend 1 period working. Let $Y_0$ indicate income if they choose not to work, and $Y_1$ be their income if they do work in this period. Later, we can generalize this to part-time and full-time work, and add coefficients to reflect that these sub-periods reflect different amounts of time.
+For mothers, hours in any period can be converted to material resources using a linear technology at rate $m$, while for non-maternal care, time inputs ($\tau_{c,lt}$) must be rented from the labor market at some wage, $w_c$.
 
-Finally, hours in any period can be converted to material resources using a linear technology at rate $m$.
+\subsubsection{Cost Minimization}
+Consider the following cost-minimization problem in period $(l,t)$:
+\[\min_{x,\tau}x+w_{lt}\tau\qquad\text{s.t.}\ I_{lt}\geq 1 \]
+where $w_{l,t}$ is the cost of a marginal unit of time for the agent responsible for childcare in period $(l,t)$.
+
+As is standard for CES technologies, the solution to the problem yields a price, $p_{l,t}$ of a unit of investment good $I_{l,t}$:
+\[p_{l,t} = \left(\phi^\varepsilon + (1-\phi)^\varepsilon w_{l,t}^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \]
+where
+\[ \varepsilon = \frac{1}{1-\rho} \]
+is the elasticity of subsitution between time and money inputs. Since the child has one of two carers, the mother ($m$), and external care ($c$), we derive two prices:
+\begin{eqnarray}
+p_m = z_m^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon m^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \\
+p_c = z_c^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon w_c^{1-\varepsilon}\right)^{1/(1-\varepsilon)}
+\end{eqnarray}
+where $w_c$ is the prevailing wage in the childcare market and $m$ is the productivity of mothers' home production (i.e. the opportunity cost of time).
+
+Thus, we write the budget constraint:
+\[ C + (L-h)p_mI_m + hp_cI_c \leq Y(h,p) + m(L-h) \]
+and accordingly, we can write aggregate investment in period $t$ as:
+\[ I_t = \left((L-h)I_m^\eta + hI_c^\eta\right)^{\frac{1}{\eta}} \]
+which is derived by adding up the investments $I_{l,t}$, depending on whether the mother is working in period $l$ or not.
 
 \subsection{Preferences}
 Periodic preferences are given by:
@@ -187,7 +228,7 @@ Here, we write $w_h$ due to the non-linearity of the budget set induced by trans
 \[P[H>0] = \frac{\sum_{h>0}\exp(U_h)}{\sum_h\exp(U_h)} \]
 Now, consider the extensive marginal elasticity with respect to a proportional increase in each post-tax wage, $w_h$. We get:
 \[\mathcal{E}_{H,w}  = \ov{\alpha}_{c,a}(1-P_H)\sum_{h>0}\frac{w_hh}{b+w_hh}P[H=h|H>0] \]
-
+which can be interpreted as a weighted average of the elasticity of
 \subsection{Estimation}
 
 
