@@ -1,0 +1,249 @@
+\documentclass[12pt]{article}
+\linespread{1.4}
+\usepackage{graphicx}
+\usepackage{pdflscape}
+\usepackage{tikz}
+\let\pgfimageWithoutPath\pgfimage
+\renewcommand{\pgfimage}[2][]{\pgfimageWithoutPath[#1]{Figures/#2}}
+\usepackage{tablefootnote,tabu,multirow,booktabs}
+\usepackage[letterpaper, margin=0.6in]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{float}
+\usepackage{natbib}
+%\usepackage{harvard}
+%\usepackage{bbm}
+\usepackage{subfigure}
+\usepackage{caption}
+\captionsetup[table]{belowskip=10pt}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=True,linkcolor=black,citecolor=blue,urlcolor=blue}
+\newtheorem{thm}{Theorem}
+\newtheorem{prop}{Proposition}%[section]
+\newtheorem{cor}{Corollary}
+\newtheorem{lem}{Lemma}
+\newtheorem{defn}{Definition}
+\newtheorem{hypo}{Hypothesis}
+\newtheorem{clm}{Claim}
+\newtheorem{cond}{Condition}
+\newtheorem{ass}{A -}
+\newcommand\ov{\overline}
+\newcommand\un{\underline}
+\newcommand\BB{\mathbb}
+\newcommand\EE{\mathbb{E}}
+\newcommand\mc{\mathcal}
+\newcommand\ti{\tilde}
+\newcommand\h{\hat}
+\newcommand\eps{\epsilon}
+\newcommand\beq{\begin{equation}}
+\newcommand\eeq{\end{equation}}
+\newcommand\barr{\begin{array}}
+\newcommand\earr{\end{array}}
+\newcommand{\indic}[1]{\mathbf{1}_{\left\{ {#1} \right\} }}
+\newcommand{\bmat}{\begin{matrix}}
+\newcommand{\emat}{\end{matrix}}
+%\def\TabPath{~/Dropbox/Research\ Projects/ChildDev_proj1/Writing/Tables/}
+\DeclareMathOperator*{\plim}{plim}
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
+\begin{document}
+\title{A structural meta-analysis of welfare reform experiments and their impacts on children}
+\author{\Large Joseph Mullins \thanks{Dept. of Economics, University of Minnesota. Email: \href{mailto:mullinsj@umn.edu}{mullinsj@umn.edu}}
+}
+%\date{}
+\maketitle
+
+\abstract{Using a model of maternal labor supply and investment in children, this paper synthesizes the findings from five separate welfare reform experiments across eleven sites. The proposed model relates the variation in experimental design across sites to variation in their average treatment effects (ATEs) on household income, labor supply, and the cognitive and socioemotional development of children through a low dimensional set of model parameters. These parameters define labor supply behavior, as well as the importance of time and money in the development of child skills. The statistical methods employed here amount to a \emph{structural meta-analysis} in which the model's parameters are estimated by combining auxiliary panel data with publicly available reports on the experiments' average treatment effects. Thus, while the model can be used to jointly rationalize different experimental impacts, this set of ATEs also provides crucial information for the credible identification of the model's key causal parameters, permitting counterfactual experiments that shed light on which welfare program features prove to be most influential in shaping child outcomes.
+}
+
+\section{Introduction}
+
+\section{Model}
+We assume that time is discrete and indexed by $t$. We assume that the child's skills are malleable for $T$ periods, at which point the investment problem ends. In this model, one period is equal to one year. We will assume that each of this periods consists of $L$ sub-periods. This is to allow for the fact that each mother may spend a portion of each week working, and will solicit external care for this part of the week. Accordingly, we set $L=112$, to represent 112 hours in a week.
+
+\subsection{Choices and Constraints}
+In each period, $t$, the mother chooses:
+\begin{itemize}
+\item How much to work, $h\in\{0,20,40\}$.
+\item For the portion of the week not spent working, a per-hour money investment in the child, $x_m$, and the fraction this time invested in the child, $\tau_m$.
+\item For the portion of the week spent working, a per-hour amount of childcare investment, $I_c$.
+\item The fraction of hours of spent not working dedicated to housework, $q$.
+\item Whether to participate in the welfare program or not, $p$.
+\end{itemize}
+Given income from program participation and work, $Y(h,p)$, the constraints are:
+\begin{eqnarray}
+\tau_m + q \leq 1 \\
+C + (L-h)x_m + hp_cI_c \leq Y(h,p) + m(L-h)q
+\end{eqnarray}
+Here, the first equation gives the time constraint, which can be written per hour spent not working, and the budget constraint. Notice that housework, $(L-h)q$ is converted to material resources at a linear rate, $m$.
+We can combine these equations into one resource constraint:
+\[ C + (L-h)(x_m + m\tau_m) + hp_cI_c \leq Y(h,p) + m(L-h) \]
+Next, we will introduce the technology of skill formation and show that, under the assumption that mothers combine time and money investments optimally, we can re-write this budget constraint in terms of aggregate per-hour home investment, $I_m$.
+
+\subsection{Technology and Cost Minimization}
+First, let's introduce a general technology which allows the possibility that investments may not be perfectly substitutable across intra-time periods. Suppose that there are L stages within time period $t$. We define production with the following three equations:
+\begin{eqnarray}
+\theta_{t+1} = \theta_t^{\delta_\theta} I_t^{\delta_I} \\
+I_t = \left(\sum_L I_{lt}^\eta \right)^{1/\eta} \\
+I_{lt} = z_{lt}\left(\phi x_{lt}^\rho + (1-\phi) \tau_{lt}^\rho \right)^{1/\rho}
+\end{eqnarray}
+where $x$ are expenditures on investment goods and $\tau$ is time investment. My expectation is that $0<\eta\leq 1$, but in principle this will be decided by the data. $z_{lt}$ will vary across periods based on who is caring for the child. For example, we can assume that mothers have a specific factor productivity, $z_{mt}$, while the care option they use will have another $z_{ct}$.
+
+For mothers, hours in any period can be converted to material resources using a linear technology at rate $m$, while for non-maternal care, time inputs ($\tau_{c,lt}$) must be rented from the labor market at some wage, $w_c$.
+
+\subsubsection{Cost Minimization}
+Consider the following cost-minimization problem in period $(l,t)$:
+\[\min_{x,\tau}x+w_{lt}\tau\qquad\text{s.t.}\ I_{lt}\geq 1 \]
+where $w_{l,t}$ is the cost of a marginal unit of time for the agent responsible for childcare in period $(l,t)$.
+
+As is standard for CES technologies, the solution to the problem yields a price, $p_{l,t}$ of a unit of investment good $I_{l,t}$:
+\[p_{l,t} = \left(\phi^\varepsilon + (1-\phi)^\varepsilon w_{l,t}^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \]
+where
+\[ \varepsilon = \frac{1}{1-\rho} \]
+is the elasticity of subsitution between time and money inputs. Since the child has one of two carers, the mother ($m$), and external care ($c$), we derive two prices:
+\begin{eqnarray}
+p_m = z_m^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon m^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \\
+p_c = z_c^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon w_c^{1-\varepsilon}\right)^{1/(1-\varepsilon)}
+\end{eqnarray}
+where $w_c$ is the prevailing wage in the childcare market and $m$ is the productivity of mothers' home production (i.e. the opportunity cost of time).
+
+Thus, we write the budget constraint:
+\[ C + (L-h)p_mI_m + hp_cI_c \leq Y(h,p) + m(L-h) \]
+and accordingly, we can write aggregate investment in period $t$ as:
+\[ I_t = \left((L-h)I_m^\eta + hI_c^\eta\right)^{\frac{1}{\eta}} \]
+which is derived by adding up the investments $I_{l,t}$, depending on whether the mother is working in period $l$ or not.
+
+\subsection{Preferences}
+Periodic preferences are given by:
+\[U(C,\theta) = \log(C) + \alpha_\theta\log(\theta) \]
+which gives the simplifcations that we are used to getting with respect to the dynamic value of investment. Let $\alpha_V$ stand in for the recursive solution to this problem, given the current age of the child.
+
+\subsection{Child Care}
+For the period spent working, mothers can choose either informal or formal child care. If choosing informal care, this provides a pre-determined input, $I_n$, at no cost. If providing formal care, the mother decides how much to pay, $Y_c$. The childcare provider then maximizes investment subject to this budget constraint:
+\[\max_{x,\tau}\left(\phi x^\rho + (1-\phi)\tau^\rho\right)^{1/\rho}\ \text{s.t.}\ x + w_c\tau = Y_c \]
+where $w_c$ is the prevailing wage in the childcare sector.
+This yields the solution:
+\begin{eqnarray}
+\frac{x}{\tau} = \left(\frac{\phi w_c}{1-\phi}\right)^{1/(\rho-1)} = \varphi_c \\
+Y_c = p_cI_c \\
+p_c = \left(\phi^\varepsilon + (1-\phi)^\varepsilon w_c^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \\
+%\frac{(1+\varphi_c w_c)}{(\phi + (1-\phi)\varphi_c^\rho)^{1/\rho}}
+\varepsilon = \frac{1}{1-\rho}
+\end{eqnarray}
+
+\subsection{Maternal Investment}
+Women face a budget and a time constraint:
+\begin{eqnarray}
+\tau_{lt} + q_{lt} = 1-h_{lt} \\
+c + x + p_c I_{c,t} = Y + m(q_{1t} + q_{2t})
+\end{eqnarray}
+where $h_{lt}$ is equal to 1 if they work in sub-period $l$.
+
+Here we have three cases. The mother can choose not to work, she can work and use informal care, or she can work and use formal care.
+
+\subsubsection{No Work}
+First order conditions for investment lead to:
+\begin{equation}
+\frac{x}{\tau} = \left(\frac{\phi m}{1-\phi}\right)^{1/(\rho-1)} = \varphi_m
+\end{equation}
+and the problem simplifies to:
+\[\max_{I_m} \log(c) + \delta_{I}\alpha_{V}\log(2I_m)\ \text{s.t.}\ c + 2p_mI_m = Y_0 + 2m \]
+where
+\[p_m = \left(\phi^\varepsilon + (1-\phi)^\varepsilon m^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \]
+Log preferences imply a solution in which a constant share of income is spent on investment:
+\[ 2p_m I_m = \frac{\delta_I\alpha_V}{1+\delta_{I}\alpha_V} \]
+
+\subsubsection{Informal Care}
+First order conditions require the same input mixture from mothers in the first period. The problem becomes:
+\[\max_{I_m} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_mI_m = Y_1 + m \]
+where $p_m$ takes the same form as above, and:
+\[ I = \left(I_m^\eta + I_n^\eta\right)^{1/\eta} \]
+In this case, we do not get the proportional investment rule. The first order condition is:
+\[\frac{p_m}{Y_1 + m - p_mI_m} = \delta_I\alpha_V\frac{I_m^{\eta-1}}{I_m^\eta + I_n^\eta}.\]
+If investments are substitutes over sub-periods, then home investment will decrease in response to an increase in the quality of informal care.
+
+
+\subsubsection{Formal Care}
+The problem can be stated now as:
+\[\max_{I_m,I_c} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_mI_m + p_cI_c = Y_1 + m \]
+where
+\[ I = \left(I_m^\eta + I_c^\eta\right)^{1/\eta}.\]
+In this case, first order conditions dictate:
+\[ \frac{I_m}{I_c} = \left(\frac{p_m}{p_c}\right)^{1/(\eta-1)} .\]
+As is always the case for CES technologies, the problem can now be re-written as:
+\[\max_{I} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_I I = Y_1 + m \]
+where
+\[ p_I = \left(p_m^\frac{\eta}{\eta-1} + p_c^\frac{\eta}{\eta-1}\right)^\frac{\eta-1}{\eta} \]
+
+
+
+\section{Full Model and Itemizing Parameters}
+Parts of the model:
+\begin{itemize}
+\item Program participation
+\item Choice of whether to work
+\item Choice of which care option to solicit.
+\item Investment decision (as described above).
+\end{itemize}
+
+\section{Key Equations}
+Here are the key equations, but maybe they'll go elsewhere eventually.
+\begin{eqnarray}
+p_I = \left((L-h)p_m^{1-\varepsilon} + hp_c^{1-\varepsilon}\right)^{\frac{1}{1-\varepsilon}} \\
+p_I I_t = \varphi_{a}(b + (w-m)h) \\
+b = N + mL
+\end{eqnarray}
+So we can write outcomes as
+\[ \log(\theta_{t+1}) = \delta_{I}\left(\log(b + (w-m)h) - \frac{1}{1-\varepsilon}\log((L-h) + h\tilde{p}_c^{1-\varepsilon}) - \frac{1}{1-\varepsilon}\log(p_m) - \log(\varphi_a)\right) + \delta_\theta\log(\theta_t)
+\]
+where $\tilde{p_c}=p_c/p_m$ is the relative price of childcare. This helps us to see that there are three key parameters that dictate the change in skills when a mother goes to work. There is the wage, net of production at home $w-m$, there is the relative price of childcare $\tilde{p}_c$, and there is the elasticity of substitution across within-time periods, $\varepsilon$.
+
+Below is the expression for total childcare expenditures:
+\[p_cI_c = \frac{h p_c^{1-\varepsilon}}{(L-h)p_m^{1-\varepsilon} + hp_c^{1-\varepsilon}} X \]
+where $X$ is total expenditure. This expression allows us to derive a compensated elasticity of expenditure on childcare with respect to its price:
+\[\mathcal{E}_{X_c,p_c} = (1-\varepsilon)\frac{(L-h)p_m^{1-\varepsilon}}{(L-h)p_m^{1-\varepsilon} + hp_c^{1-\varepsilon}} \]
+which we can write in terms of the relative price of childcare:
+\[\mathcal{E}_{X_c,p_c} = (1-\varepsilon)\frac{(L-h)}{(L-h) + h\tilde{p}_c^{1-\varepsilon}}.\]
+This gives us a simple framework to think about the effect on child outcomes of:
+\begin{itemize}
+\item Subsidies to employment
+\item Subsidies to childcare
+\item Programs that jointly subsidize both employment and childcare.
+\item The generic effect of other programs that effect employment.
+\end{itemize}
+Remember that programs have the following components:
+\begin{itemize}
+\item Subsidies to employment.
+\item Childcare subsidies.
+\item Time limits.
+\item Work requirements.
+\end{itemize}
+For the latter two items, we need to think about a bigger picture (i.e. dynamic) model of labor supply. All this allows us to do other stuff (i.e. welfare calculations from welfare reform).
+
+Let $\ov{\alpha}_{c,a} = \alpha_c + \alpha_{V,a}$. We can calculate the indirect utility of a choice $h$ of hours, as:
+\[ U_h = \ov{\alpha}_{c,a}\log(b+m(L-h)+w_hh) - \alpha_{V,a}\log\left([L + h\tilde{p}_c^{1-\varepsilon}]^{1/(1-\varepsilon)}\right) - \alpha_{V,a}\log(p_m) \]
+Here, we write $w_h$ due to the non-linearity of the budget set induced by transfer programs. Allowing for $h$ to be in a finite grid, $\mc{H}$, we can write the probability of employment as:
+\[P[H>0] = \frac{\sum_{h>0}\exp(U_h)}{\sum_h\exp(U_h)} \]
+Now, consider the extensive marginal elasticity with respect to a proportional increase in each post-tax wage, $w_h$. We get:
+\[\mathcal{E}_{H,w}  = \ov{\alpha}_{c,a}(1-P_H)\sum_{h>0}\frac{w_hh}{b+w_hh}P[H=h|H>0] \]
+which can be interpreted as a weighted average of the elasticity of
+\subsection{Estimation}
+
+
+\subsection{Identification}
+
+
+\section{Extensions}
+\begin{itemize}
+\item Extend to more than two sub-periods.
+\item Could we extend to a generic number of hours? i.e. 112 hours in a time period.
+\end{itemize}
+
+%\bibliography{../../../master.bib/OrgLibrary}
+%\bibliography{CashTransfersBib}
+\bibliographystyle{ecta}
+
+
+\end{document}
