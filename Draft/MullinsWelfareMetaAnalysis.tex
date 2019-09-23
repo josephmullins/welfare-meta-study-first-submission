@@ -61,132 +61,147 @@
 \section{Introduction}
 
 \section{Model}
-We assume that time is discrete and indexed by $t$. We assume that the child's skills are malleable for $T$ periods, at which point the investment problem ends. In this model, one period is equal to one year. We will assume that each of this periods consists of $L$ sub-periods. This is to allow for the fact that each mother may spend a portion of each week working, and will solicit external care for this part of the week. Accordingly, we set $L=112$, to represent 112 hours in a week.
+We assume that time is discrete and indexed by $t$. We assume that the child's skills are malleable for $T$ periods, at which point the investment problem ends. In this model, one period is equal to one year. We will model a representative week\footnote{This is an innocuous scaling assumption.} in this year,  which consists of $L$ sub-periods (hours). This is to allow for the fact that each mother may spend a portion of their week working, and will solicit external care for this part of the week. Accordingly, we set $L=112$, to represent 112 hours in a week.
 
 \subsection{Choices and Constraints}
 In each period, $t$, the mother chooses:
 \begin{itemize}
 \item How much to work, $h\in\{0,20,40\}$.
-\item For the portion of the week not spent working, a per-hour money investment in the child, $x_m$, and the fraction this time invested in the child, $\tau_m$.
-\item For the portion of the week spent working, a per-hour amount of childcare investment, $I_c$.
-\item The fraction of hours of spent not working dedicated to housework, $q$.
+\item For the portion of the week not spent working, a per-hour money investment in the child, $x_m$, and the fraction of this time invested in the child, $\tau_m$.
+\item For the portion of the week spent working, a per-hour amount of childcare investment to purchase, $I_c$.
+\item The fraction of hours spent not working dedicated to housework, $q$.
 \item Whether to participate in the welfare program or not, $p$.
 \end{itemize}
 Given income from program participation and work, $Y(h,p)$, the constraints are:
 \begin{eqnarray}
 \tau_m + q \leq 1 \\
-C + (L-h)x_m + hp_cI_c \leq Y(h,p) + m(L-h)q
+C + (L-h)x_m + hp_cI_c \leq Y(h,p) + w_q(L-h)q
 \end{eqnarray}
-Here, the first equation gives the time constraint, which can be written per hour spent not working, and the budget constraint. Notice that housework, $(L-h)q$ is converted to material resources at a linear rate, $m$.
+Here, the first equation gives the time constraint, which is written per hour spent not working, and the second equation gives the budget constraint. Notice that total housework, $(L-h)q$, is converted to material resources at a linear rate, $w_q$.
 We can combine these equations into one resource constraint:
-\[ C + (L-h)(x_m + m\tau_m) + hp_cI_c \leq Y(h,p) + m(L-h) \]
-Next, we will introduce the technology of skill formation and show that, under the assumption that mothers combine time and money investments optimally, we can re-write this budget constraint in terms of aggregate per-hour home investment, $I_m$.
+\[ C + (L-h)(x_m + w_q\tau_m) + hp_cI_c \leq Y(h,p) + w_q(L-h). \]
+Next, we will introduce the technology of skill formation and show that, under the assumption that mothers combine time and money investments optimally, we can re-write this budget constraint to include aggregate per-hour home investment by the mother, $I_m$.
 
 \subsection{Technology and Cost Minimization}
-First, let's introduce a general technology which allows the possibility that investments may not be perfectly substitutable across intra-time periods. Suppose that there are L stages within time period $t$. We define production with the following three equations:
+First, let's introduce a general technology which allows the possibility that investments may not be perfectly substitutable across intra-time periods. Recall that there are L stages within time period $t$. We define production with the following three equations:
 \begin{eqnarray}
 \theta_{t+1} = \theta_t^{\delta_\theta} I_t^{\delta_I} \\
 I_t = \left(\sum_L I_{lt}^\eta \right)^{1/\eta} \\
 I_{lt} = z_{lt}\left(\phi x_{lt}^\rho + (1-\phi) \tau_{lt}^\rho \right)^{1/\rho}
 \end{eqnarray}
-where $x$ are expenditures on investment goods and $\tau$ is time investment. My expectation is that $0<\eta\leq 1$, but in principle this will be decided by the data. $z_{lt}$ will vary across periods based on who is caring for the child. For example, we can assume that mothers have a specific factor productivity, $z_{mt}$, while the care option they use will have another $z_{ct}$.
+where $x$ are expenditures on investment goods and $\tau$ is time investment. My expectation is that $0<\eta\leq 1$, but in principle this will be decided by the data. $z_{lt}$ will vary across periods based on who is caring for the child. Mothers have a specific factor productivity, $z_m$, while the care option they solicit has another $z_{c}$.
 
-For mothers, hours in any period can be converted to material resources using a linear technology at rate $m$, while for non-maternal care, time inputs ($\tau_{c,lt}$) must be rented from the labor market at some wage, $w_c$.
+For mothers, the opportunity cost of time investment is $w_{q}$, her productivity in hours of work, while for non-maternal care, time inputs ($\tau_{lt}$) must be rented from the labor market at some wage, $w_c$.
 
 \subsubsection{Cost Minimization}
+{\color{red} TODO: we need to include the input ratios and formulae for expenditure.}
 Consider the following cost-minimization problem in period $(l,t)$:
 \[\min_{x,\tau}x+w_{lt}\tau\qquad\text{s.t.}\ I_{lt}\geq 1 \]
-where $w_{l,t}$ is the cost of a marginal unit of time for the agent responsible for childcare in period $(l,t)$.
+where $w_{lt}$ is the cost of a marginal unit of time for the agent responsible for childcare in period $(l,t)$.
 
-As is standard for CES technologies, the solution to the problem yields a price, $p_{l,t}$ of a unit of investment good $I_{l,t}$:
-\[p_{l,t} = \left(\phi^\varepsilon + (1-\phi)^\varepsilon w_{l,t}^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \]
+As is standard for CES technologies, the solution to the problem yields a price, $p_{lt}$, of a unit of investment good $I_{lt}$:
+\[p_{lt} = z^{-1}_{lt}\left(\phi^\zeta + (1-\phi)^\zeta w_{lt}^{1-\zeta}\right)^{1/(1-\zeta)} \]
 where
-\[ \varepsilon = \frac{1}{1-\rho} \]
+\[ \zeta = \frac{1}{1-\rho} \]
 is the elasticity of subsitution between time and money inputs. Since the child has one of two carers, the mother ($m$), and external care ($c$), we derive two prices:
 \begin{eqnarray}
-p_m = z_m^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon m^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \\
-p_c = z_c^{-1}\left(\phi^\varepsilon + (1-\phi)^\varepsilon w_c^{1-\varepsilon}\right)^{1/(1-\varepsilon)}
+p_m = z_m^{-1}\left(\phi^\zeta + (1-\phi)^\zeta w_q^{1-\zeta}\right)^{1/(1-\zeta)} \\
+p_c = z_c^{-1}\left(\phi^\zeta + (1-\phi)^\zeta w_c^{1-\zeta}\right)^{1/(1-\varepsilon)}
 \end{eqnarray}
-where $w_c$ is the prevailing wage in the childcare market and $m$ is the productivity of mothers' home production (i.e. the opportunity cost of time).
+where $w_c$ is the prevailing wage in the childcare market and $w_q$ is the productivity of mothers' home production (i.e. the opportunity cost of time).
 
 Thus, we write the budget constraint:
-\[ C + (L-h)p_mI_m + hp_cI_c \leq Y(h,p) + m(L-h) \]
+\[ C + (L-h)p_mI_m + hp_cI_c \leq Y(h,p) + w_q(L-h) \]
 and accordingly, we can write aggregate investment in period $t$ as:
 \[ I_t = \left((L-h)I_m^\eta + hI_c^\eta\right)^{\frac{1}{\eta}} \]
-which is derived by adding up the investments $I_{l,t}$, depending on whether the mother is working in period $l$ or not.
+which is derived by adding up the investments $I_{lt}$, depending on whether the mother is working in period $l$ or not.
+
+We can apply this cost-minimization result once more, since efficient decision-making by the mother requires her to minimize the cost of a unit of the investment good. She solves:
+\[ \min_{I_m,I_c}(L-h)p_mI_m + hp_cI_c\qquad\text{s.t.}\ I_t\geq 1 \]
+which results in the composite price of aggregate investment:
+\[p_I = \left((L-h)p_m^{1-\varepsilon}+hp_c^{1-\varepsilon}\right)^{\frac{1}{1-\varepsilon}} \]
+where $\varepsilon$ is the elasticity of subsitution of investments across sub-periods:
+\[\varepsilon = \frac{1}{1-\eta}.\]
+Therefore, subject to the choice of labor supply, we can write the period $t$ resource constraint as:
+\[ C_t + p_II_t \leq Y(h_t,p_t) + w_q(L-h_t) .\]
+We should be mindful, however, that the price of aggregate investment depends on labor supply decisions. In addition, since program participation may introduce subsidies to childcare purchase, in extended versions of the model $p_I$ may depend on the program participation choice as well.
 
 \subsection{Preferences}
-Periodic preferences are given by:
-\[U(C,\theta) = \log(C) + \alpha_\theta\log(\theta) \]
-which gives the simplifcations that we are used to getting with respect to the dynamic value of investment. Let $\alpha_V$ stand in for the recursive solution to this problem, given the current age of the child.
+The mother's utility in period $t$ is given by:
+\[U(C_t,h_t,p_t,\theta_t) = \alpha_{C}\log(C_t) + \alpha_\theta\log(\theta_t) - \alpha_h\mathbf{1}\{h>0\} - \alpha_p p_t + \eps_{h,p,t}\]
+where $\eps_{h,p,t}$ is a choice-specific random variable, which is distributed independently and identically across choices and over time. In addition, there is a terminal payoff at time $T$, when the child's development has concluded, equal to:
+\[ \alpha_{V,T}\log(\theta_T) .\]
+Mothers are forward-looking, discounting the future at rate $\beta$. Thus, she values future sequences of decisions according as
+\[V_t = \mathbb{E}_t\left\{\sum_{s=t}^{T-1}\beta^{s-t}U(C_s,h_s,p_s,\theta_s) + \alpha_{V,T}\log(\theta_T)\right\} \]
+where $\mathbb{E}_t$ is her conditional expectation given information at time $t$.
 
-\subsection{Child Care}
-For the period spent working, mothers can choose either informal or formal child care. If choosing informal care, this provides a pre-determined input, $I_n$, at no cost. If providing formal care, the mother decides how much to pay, $Y_c$. The childcare provider then maximizes investment subject to this budget constraint:
-\[\max_{x,\tau}\left(\phi x^\rho + (1-\phi)\tau^\rho\right)^{1/\rho}\ \text{s.t.}\ x + w_c\tau = Y_c \]
-where $w_c$ is the prevailing wage in the childcare sector.
-This yields the solution:
+\section{Solving the Model}
+\subsection{Simplifying the Problem}
+In order to make decisions optimally (work, programs, investment), mothers must trade off utility today with the expected discounted present value of these decisions in the future. In the current structure, we can greatly simplify the problem. First, notice that \[\log(\theta_{T}) = \delta_{\theta}\log(\theta_{T-1}) + \delta_I\log(I_{T-1})\] and so at $T-1$ we can write:
+\begin{align*}
+V_{T-1} &= \underbrace{(\alpha_\theta+\beta\delta_{\theta}\alpha_{V,T})}_{=\alpha_{V,T-1}}\log(\theta_{T-1}) + \underbrace{\beta\delta_{I}\alpha_{V,T}\log(I_{T-1}) + \alpha_C\log(C_{T-1}) -\alpha_h\mathbf{1}\{h_{T-1}>0\} - \alpha_pp_{T-1} + \eps_{h,p,T-1}}_{=u_{T-1}} \\
+&= \alpha_{V,T-1}\log(\theta_{T-1}) + u_{T-1}(C_{T-1},h_{T-1},p_{T-1},I_{T-1})
+\end{align*}
+Given $V_{T-1}$, we can work backwards, and can re-write the value, $V_t$, recursively as:
 \begin{eqnarray}
-\frac{x}{\tau} = \left(\frac{\phi w_c}{1-\phi}\right)^{1/(\rho-1)} = \varphi_c \\
-Y_c = p_cI_c \\
-p_c = \left(\phi^\varepsilon + (1-\phi)^\varepsilon w_c^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \\
-%\frac{(1+\varphi_c w_c)}{(\phi + (1-\phi)\varphi_c^\rho)^{1/\rho}}
-\varepsilon = \frac{1}{1-\rho}
+V_t = \alpha_{V,t}\log(\theta_t) + v_t \nonumber \\
+v_t = \mathbb{E}_t\left\{\sum_{s=t}^{T-1}\beta^{s-t}u_s(C_s,h_s,p_s,I_s)\right\} \nonumber \\
+\alpha_{V,t} = \alpha_\theta + \beta\delta_{\theta}\alpha_{V,t+1} \nonumber
 \end{eqnarray}
+This representation is robust to additions such as (1) making production parameters dependent on the child's age, or (2) including multiple skills. This representation is particularly useful because it simplifies the choice of investment $I_t$, which is dynamic, into a static choice summarised by $\alpha_{V,t}$.
+\subsection{Solving Investment}
+First, let's fix a particular choice of work and program participation, $(h,p)$. Taking first order conditions for investment, $I_t$ we can derive:
+\[p_II_t = \underbrace{\frac{\beta\delta_I\alpha_{V,t+1}}{\alpha_C+\beta\delta_I\alpha_{V,t+1}}}_{ = \varphi_{t}}\left(Y(h,p) + w_q(L-h)\right) \]
+where we define $\varphi_{t}$ as the \emph{marginal propensity to invest} in the child. Given the resource constraint, this implies that
+\[C_t = (1-\varphi_t)(Y(h,p)+w_q(L-h)) .\]
+This means that we can solve for the indirect utility of a choice $(h,p)$, which is:
+\begin{align*}
+u_t(h,p) =& (\alpha_C+\beta\delta_{\theta}\alpha_{V,t+1})\log(Y(h,p)+w_q(L-h)) \\
+& - \beta\delta_{I}\alpha_{V,t+1}\log\left([L + h(\tilde{p}_c^{1-\varepsilon}-1)]^{1/(1-\varepsilon)}\right) \\
+& - \alpha_h\mathbf{1}\{h>0\} - \alpha_pp \\
+& + \beta\delta_I\alpha_{V,t+1}(\log(\varphi_t) - \log(p_m)) + \alpha_C\log(1-\varphi_t)
+\end{align*}
+Notice that each term on the last line is a constant, unaffected by any choices. We can therefore ignore these terms in the remainder of this analysis.
 
-\subsection{Maternal Investment}
-Women face a budget and a time constraint:
+\subsection{Choice Probabilities, Value Functions, and Extending the Model}
+The assumption that the utility shocks, $\eps_{h,p,t}$, are distributed as Type I Extreme Value, means that we can (1) take the expectation $\mathbb{E}_t$ without relying on numerical integration, and (2) write choice probabilities in close-form. To see this, note that if there are $D$ discrete choices associated with values $v(d)$, $d\in\{1,...,D\}$ then we get:
 \begin{eqnarray}
-\tau_{lt} + q_{lt} = 1-h_{lt} \\
-c + x + p_c I_{c,t} = Y + m(q_{1t} + q_{2t})
+P[d=k] = \frac{\exp[v(k)]}{\sum_{d=1}^D\exp[v(d)]} \label{eq:choiceprob} \\
+\EE\left[\max_{d}\{v(d)+\eps_d\}\right] = \log\left(\sum_{d=1}^D\exp[v(d)]\right)
 \end{eqnarray}
-where $h_{lt}$ is equal to 1 if they work in sub-period $l$.
+In our case, $D=6$, since there are 6 combinations of program participation and work hours to choose from.
 
-Here we have three cases. The mother can choose not to work, she can work and use informal care, or she can work and use formal care.
+This means we can calculate:
+\[v_{T-1} = \log\left(\sum_{h,p}\exp[u_{T-1}(h,p)]\right)\]
+as the value of arriving at time $T-1$. For all periods prior to $T-1$ we can recursively define:
+\[v_t = \log\left(\sum_{h,p}\exp[u_{t}(h,p) + \beta v_{t+1}]\right)\]
+and calculate the choice probabilities using formula \eqref{eq:choiceprob}.
 
-\subsubsection{No Work}
-First order conditions for investment lead to:
-\begin{equation}
-\frac{x}{\tau} = \left(\frac{\phi m}{1-\phi}\right)^{1/(\rho-1)} = \varphi_m
-\end{equation}
-and the problem simplifies to:
-\[\max_{I_m} \log(c) + \delta_{I}\alpha_{V}\log(2I_m)\ \text{s.t.}\ c + 2p_mI_m = Y_0 + 2m \]
-where
-\[p_m = \left(\phi^\varepsilon + (1-\phi)^\varepsilon m^{1-\varepsilon}\right)^{1/(1-\varepsilon)} \]
-Log preferences imply a solution in which a constant share of income is spent on investment:
-\[ 2p_m I_m = \frac{\delta_I\alpha_V}{1+\delta_{I}\alpha_V} \]
+Notice that in this case, since decisions regarding work and participation do not effect the payoffs from these choices in future periods, these decisions only require calculation of each $u_t(p,h)$. In order to estimate the model, we will have to add two extensions to this baseline model:
+\begin{enumerate}
+\item Time limits: suppose that mothers are permitted to participate in the program for a maximum of $\Omega$ periods. If the time limit $\Omega$ is reached, the choice $p=1$ is no longer allowed.
+\item Stochastic wages. Let $w_t$ be the mother's wage that she can earn in the labor market. We will now write the income function as $Y(w,h,p)$ to make explicit that the budget depends on this state variable. We will assume that $w_t$ follows a \emph{Markov Process}: $w_{t+1}$ is drawn randomly from a distribution $F(\cdot|w_t)$. This introduces income risk in the model, and interacts with the introduction of time limits.
+\end{enumerate}
+Let us also write indirect utility as $u_t(w,h,p)$ to indicate dependance of the return to particular choices on this state variable. We can re-write the solution to the model equations:
+\begin{eqnarray}
+v_{T-1}(\omega,w) = \left\{\begin{array}{ll}\log\left(\sum_{h,p}\exp[u_{T-1}(w,h,p)]\right) & \text{if}\ \omega<\Omega  \\
+\log\left(\sum_{h}\exp[u_{T-1}(w,h,0)]\right) & \text{if}\ \omega=\Omega\end{array}\right. \nonumber \\
+v_t(\omega,w) = \left\{\begin{array}{ll}\log\left(\sum_{h,p}\exp[u_{t}(w,h,p) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w)]\right) & \text{if}\ \omega<\Omega \\
+\log\left(\sum_{h}\exp[u_{t}(w,h,0) + \beta\int v_{t+1}(\Omega,w^\prime)dF(w^\prime|w)]\right) & \text{if}\ \omega=\Omega\end{array}\right.\nonumber
+\end{eqnarray}
+These extensions introduce dynamics into the model. Given a current wage, $w$, and accumulated welfare use, $\omega$, the mother must decide whether she wants to use welfare today or if she wishes to save this usage for future periods. If she chooses $p=0$, then her stock of accumulated use remains unchanged. However, if $p=1$, then she arrives next period with accumulated usage $\omega+1$, and is one step close to exhausting her entitlements. This new constraint interacts with wages, since an uncertainty in this dimension creates the desire for insurance against the possibility of future negative shocks in wages (i.e. periods in which little income can be generated by working).
 
-\subsubsection{Informal Care}
-First order conditions require the same input mixture from mothers in the first period. The problem becomes:
-\[\max_{I_m} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_mI_m = Y_1 + m \]
-where $p_m$ takes the same form as above, and:
-\[ I = \left(I_m^\eta + I_n^\eta\right)^{1/\eta} \]
-In this case, we do not get the proportional investment rule. The first order condition is:
-\[\frac{p_m}{Y_1 + m - p_mI_m} = \delta_I\alpha_V\frac{I_m^{\eta-1}}{I_m^\eta + I_n^\eta}.\]
-If investments are substitutes over sub-periods, then home investment will decrease in response to an increase in the quality of informal care.
+Since welfare now has the potential to affect future payoffs, it will be useful to define the \emph{choice-specific value}, which gives the dynamic value to each discrete choice:
+\[\ov{v}_t(h,p,\omega,w) = u_{t}(w,h,p) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w).\]
+A similar equation holds for the case in which the time limit has been reached ($\omega=\Omega$). Similarly, in this setting we can write the choice-specific value of a particular $p\in\{0,1\}$, integrating out the utility shocks $\eps_{h,p,t}$ that apply for each choice of $p$. We get:
+\[\ov{v}_t(p,\omega,w) = \log\left(\sum_h\exp[u_{t}(w,h,p)]\right) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w).\]
+This expression will be useful in the upcoming section in which we address how the model's parameters are identified by experimental effects.
 
-
-\subsubsection{Formal Care}
-The problem can be stated now as:
-\[\max_{I_m,I_c} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_mI_m + p_cI_c = Y_1 + m \]
-where
-\[ I = \left(I_m^\eta + I_c^\eta\right)^{1/\eta}.\]
-In this case, first order conditions dictate:
-\[ \frac{I_m}{I_c} = \left(\frac{p_m}{p_c}\right)^{1/(\eta-1)} .\]
-As is always the case for CES technologies, the problem can now be re-written as:
-\[\max_{I} \log(c) + \delta_{I}\alpha_{V}\log(I)\ \text{s.t.}\ c + p_I I = Y_1 + m \]
-where
-\[ p_I = \left(p_m^\frac{\eta}{\eta-1} + p_c^\frac{\eta}{\eta-1}\right)^\frac{\eta-1}{\eta} \]
-
-
-
-\section{Full Model and Itemizing Parameters}
-Parts of the model:
-\begin{itemize}
-\item Program participation
-\item Choice of whether to work
-\item Choice of which care option to solicit.
-\item Investment decision (as described above).
-\end{itemize}
+\section{Policy Functions of Interest}
+Given the results so far, we can write the following additional choice probabilities and investment policies. First, the probability of program participation can be written in terms of the choice-specific values:
+\[P[p=1|w,\omega,t] = \frac{\exp[\ov{v}_t(1,\omega,w)]}{\exp[\ov{v}_t(0,\omega,w)]+\exp[\ov{v}_t(1,\omega,w)]} \]
+Notice that the calculation of this choice probabilitiy significantly simplifies in the case without time limits, since it becomes a static problem. Next, fixing the choice of program participation, $p$, we can write the conditional probability of work hours $k\in\{0,20,40\}$:
+\[P[h=k|p,w,\omega,t] = \frac{\exp[u_t(w,k,p)]}{\sum_hu_t(w,h,p)}. \]
 
 \section{Key Equations}
 Here are the key equations, but maybe they'll go elsewhere eventually.
@@ -234,12 +249,6 @@ which can be interpreted as a weighted average of the elasticity of
 
 \subsection{Identification}
 
-
-\section{Extensions}
-\begin{itemize}
-\item Extend to more than two sub-periods.
-\item Could we extend to a generic number of hours? i.e. 112 hours in a time period.
-\end{itemize}
 
 %\bibliography{../../../master.bib/OrgLibrary}
 %\bibliography{CashTransfersBib}
