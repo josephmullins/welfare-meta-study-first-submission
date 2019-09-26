@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1569341353 "MullinsWelfareMetaAnalysis.tex" "MullinsWelfareMetaAnalysis.pdf" "MullinsWelfareMetaAnalysis" 1569341353
+["pdflatex"] 1569457422 "MullinsWelfareMetaAnalysis.tex" "MullinsWelfareMetaAnalysis.pdf" "MullinsWelfareMetaAnalysis" 1569457422
   "/Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "/Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1246382020 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
   "/Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy7.tfm" 1246382020 1120 7f9f170e8aa57527ad6c49feafd45d54 ""
@@ -121,11 +121,11 @@
   "/Users/joseph/Library/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1566792132 91342 0a2aab1fa7e5ee63b9142ae86875cebd ""
   "/Users/joseph/Library/TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1566792105 800440 5a9c8b2d23ecf886e954a63a0ab1a8b5 ""
   "/Users/joseph/Library/TinyTeX/texmf.cnf" 1566792134 682 79e5ad588cb20b4f5a8941cc719c08d2 ""
-  "MullinsWelfareMetaAnalysis.aux" 1569341353 3129 87ddb56c7aa2b2119b3385d923e6302a "pdflatex"
-  "MullinsWelfareMetaAnalysis.out" 1569341353 1213 ebb85fe8aa599553e31f588af549bb2c "pdflatex"
-  "MullinsWelfareMetaAnalysis.tex" 1569341353 21546 e3825b263bddff5c79553d302605f874 ""
+  "MullinsWelfareMetaAnalysis.aux" 1569457422 3129 87ddb56c7aa2b2119b3385d923e6302a "pdflatex"
+  "MullinsWelfareMetaAnalysis.out" 1569457422 1213 ebb85fe8aa599553e31f588af549bb2c "pdflatex"
+  "MullinsWelfareMetaAnalysis.tex" 1569457422 21757 a6fe1f6f8a905b7137d10c377f504d7e ""
   (generated)
-  "MullinsWelfareMetaAnalysis.aux"
-  "MullinsWelfareMetaAnalysis.out"
-  "MullinsWelfareMetaAnalysis.pdf"
   "MullinsWelfareMetaAnalysis.log"
+  "MullinsWelfareMetaAnalysis.aux"
+  "MullinsWelfareMetaAnalysis.pdf"
+  "MullinsWelfareMetaAnalysis.out"
