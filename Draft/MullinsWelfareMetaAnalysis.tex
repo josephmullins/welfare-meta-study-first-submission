@@ -201,12 +201,15 @@ These extensions introduce dynamics into the model. Given a current wage, $w$, a
 Since welfare now has the potential to affect future payoffs, it will be useful to define the \emph{choice-specific value}, which gives the dynamic value to each discrete choice:
 \[\ov{v}_t(h,p,\omega,w) = u_{t}(w,h,p) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w).\]
 A similar equation holds for the case in which the time limit has been reached ($\omega=\Omega$). Similarly, in this setting we can write the choice-specific value of a particular $p\in\{0,1\}$, integrating out the utility shocks $\eps_{h,p,t}$ that apply for each choice of $p$. We get:
-\[\ov{v}_t(p,\omega,w) = \log\left(\sum_h\exp[u_{t}(w,h,p)]\right) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w).\]
-This expression will be useful in the upcoming section in which we address how the model's parameters are identified by experimental effects.
+\begin{align*}
+\ov{v}_t(p,\omega,w) &= \log\left(\sum_h\exp[u_{t}(w,h,p)]\right) + \beta\int v_{t+1}(\omega+p,w^\prime)dF(w^\prime|w) \\
+&= \ov{u}_t(w,p) + \EE_{w'|w}v_{t+1}(\omega+p,w').
+\end{align*}
+This expression will be useful in the upcoming section in which we address how the model's parameters are identified by experimental effects. The second line phrases this value in terms of mean utility from choice $p$, and replace the integral with the expectation operator $\EE_{w'|w}$.
 
 \section{Policy Functions of Interest}
 Given the results so far, we can write the following additional choice probabilities and investment policies. First, the probability of program participation can be written in terms of the choice-specific values:
-\[P[p=1|w,\omega,t] = \frac{\exp[\ov{v}_t(1,\omega,w)]}{\exp[\ov{v}_t(0,\omega,w)]+\exp[\ov{v}_t(1,\omega,w)]} \]
+\[P[p=1|w,\omega,t] = \rho_t(\omega,w) = \frac{\exp[\ov{v}_t(1,\omega,w)]}{\exp[\ov{v}_t(0,\omega,w)]+\exp[\ov{v}_t(1,\omega,w)]} \]
 Notice that the calculation of this choice probabilitiy significantly simplifies in the case without time limits, since it becomes a static problem. Next, fixing the choice of program participation, $p$, we can write the conditional probability of work hours $k\in\{0,20,40\}$:
 \[P[h=k|p,w,\omega,t] = \frac{\exp[u_t(w,k,p)]}{\sum_h\exp[u_t(w,h,p)]}. \]
 Since the functional form of $u_t(w,h,p)$, given in \eqref{eq:utility}, can be expressed in terms of the parameter set ($\alpha_C,\alpha_{V,t},\alpha_h,\alpha_p,\tilde{p}_c,\varepsilon$) and the total income function $Y(w,h,p)$, we can use this expression to derive labor supply elasticities with respect to the relative price of childcare, $\tilde{p}_c$, and post-tax wages.
@@ -240,18 +243,29 @@ which can be interpreted as a weighted average of the elasticity of the probabil
 
 \subsection{Time Limits and Program Participation}
 In order to understand the effect of time limits on program use, first notice that if $T-t\leq\Omega-\omega_t$, then there is no possibility that time limits will be exhausted. In this case, probability of program participation if given by:
-\[P\infty(w) = \frac{\exp[u_t(w,1)]}{\exp[u_t[w,0]]+\exp[u_t(w,1)]} \]
+\[\rho_t(\infty,w) = \frac{\exp[u_t(w,1)]}{\exp[u_t[w,0]]+\exp[u_t(w,1)]} \]
 which is identical to the case in which time limits do not exist.
 
-%Now consider the case for a mother with $T-t=\Omega-\omega_t+1$. In this case, if she uses time limits today, she will not be able to.
+We can exploit the finite dependence properties of this model to derive that:
+\[\ov{v}_t(1,\omega,w) = \ov{u}_t(w,1) + \beta\EE_{w'',w'|w}[\ov{u}_{t+1}(w',0)+\beta v_{t+2}(w'',\omega+1) - \log(1-\rho_t(\omega+1,w'))] \]
+and
+\[\ov{v}_t(0,\omega,w) = \ov{u}_t(w,0) + \beta\EE_{w'',w'|w}[\ov{u}_{t+1}(w',1)+\beta v_{t+2}(w'',\omega+1) - \log(\rho_t(\omega,w'))] \]
+This means that we can write:
+\[\ov{v}_t(1,\omega,w)-\ov{v}_t(0,\omega,w) = \ov{u}_t(w,1)-\ov{u}_t(w,0) + \beta\EE_{w'|w}\left[u_{t+1}(0,w')-u_{t+1}(1,w')+\log\left(\frac{\rho_{t+1}(\omega,w')}{1-\rho_{t+1}(\omega+1,w')}\right)\right] \]
+This means that we can write the treatment effect of the imposition of time limits in terms of choice probabilities, which can be taken straight from the data, and $\beta$:
+\[
+\log\left(\frac{\rho_{t}(\omega,w)}{1-\rho_t(\omega,w)}\right)-\log\left(\frac{\rho_{t}(\infty,w)}{1-\rho_t(\infty,w)}\right) = \beta\EE_{w'|w}\left[\log\left(\frac{\rho_{t}(\infty,w')}{1-\rho_t(\infty,w')}\right)+\log\left(\frac{\rho_{t+1}(\omega,w')}{1-\rho_{t+1}(\omega+1,w')}\right)\right].
+\]
+One can think of $\rho_{t}(\infty,w)$ as an index for how desirable the option of welfare participation is given the current wage, $w$. This expression allows us to see that $\beta$ is crucial in determining the impact of time limits. Consider, for example, a mean preserving spread in the random variable $\rho_t(\omega,w')/(1-\rho_t(\omega,w'))$. Due to the concavity of the log term, this leads to a decrease in the value of the right hand-side, and an increase in the magnitude of the treatment effect. In this comparative static, $\beta$ determines the magnitude of this effect and the extent to which the mother values the insurance provided by banking entitlements for future use.
 
-%For a mother who must choose between welfare use today, or welfare use tomorrow, we can derive the effect of the time limit as:
+Finally, noting that $\rho_t(\omega,w) = \rho_t(\infty,w)$ for all pairs $(\omega,t)$ such that $T-t\leq\Omega-\omega$, the treatment effects of time limits on all states can be expressed recursively as solely a function of choice probabilities without time limits, $\rho_t(\infty,w)$, and the discount factor $\beta$. The recursion begins with:
+\[
+\log\left(\frac{\rho_{T-2}(\Omega-1,w)}{1-\rho_{T-2}(\Omega-1,w)}\right)-\log\left(\frac{\rho_{T-2}(\infty,w)}{1-\rho_{T-2}(\infty,w)}\right) = \beta\EE[\log(\rho_{T}(\infty,w'))]
+\]
+From this point, each $\rho_{t}(\omega,\cdot)$ can be constructed from $\rho_{t}(\infty,\cdot)$, $\rho_{t+1}(\infty,\cdot)$, $\rho_{t+1}(\omega,\cdot)$ and $\rho_{t+1}(\omega+1,\cdot)$.
+This technique echoes the identification approach of \cite{GroggerMichal2003}, who use this condition to separately identify the effect of time limits on welfare participation from changes in incentives in the Florida Transition Program experiment.
+{\color{red} TODO: fix $T$ vs $T+1$ problem. Deciding which is the end effects these equations and the ones above. }
 
-{\color{red}TODO:
-\begin{enumerate}
-\item Derive treatment effect of time limits on program participation. Started in above section.
-\end{enumerate}
-}
 
 \subsection{Identification}
 
@@ -259,7 +273,7 @@ which is identical to the case in which time limits do not exist.
 
 
 %\bibliography{../../../master.bib/OrgLibrary}
-%\bibliography{CashTransfersBib}
+\bibliography{CashTransfersBib}
 \bibliographystyle{ecta}
 
 

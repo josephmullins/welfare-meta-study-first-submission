@@ -1,0 +1,10 @@
+\begin{thebibliography}{1}
+\newcommand{\enquote}[1]{``#1''}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[\protect\citeauthoryear{Grogger and Michalopoulos}{Grogger and
+  Michalopoulos}{2003}]{GroggerMichal2003}
+\textsc{Grogger, J. and C.~Michalopoulos} (2003): \enquote{{Welfare Dynamics
+  under Time Limits},} \emph{Journal of Political Economy}, 111, 530--554.
+
+\end{thebibliography}
