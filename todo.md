@@ -16,6 +16,10 @@
 - One of the above, but put in wage distribution, using either ACS or CPS
 
 
+Test:
+- [ ] here
+- [ ] here
+
 # Things to prepare
 ## Baseline characteristics (collect)
 List of baseline characteristics across sites
@@ -53,6 +57,5 @@ List of baseline characteristics across sites
 Other notes:
 * Treatment effects are pooled across sites (need sample sizes)
 * Time limits become salient at about 8 quarters (time limit)
-
 
 ## NEWWS
