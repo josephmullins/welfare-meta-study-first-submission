@@ -21,6 +21,7 @@
 List of baseline characteristics across sites
 - Age of youngest child
 - Earnings
+- Education
 - Spend on Childcare
 - Welfare use (long-term)
 - Age
@@ -31,3 +32,27 @@ List of baseline characteristics across sites
 - Multiple skills
 - Age-dependent parameters
 - Potential differences in up vs down across skill types and ages
+
+# Available Data
+## LA-GAIN
+- Childcare:
+- Youngest Child:
+- Number of Children:
+- Location:
+-
+## FTP
+## MFIP
+## CTJF
+- Childcare:
+- Youngest Child:
+-- proportions in <2,3-5,6+
+- Number of Children:
+-- both mean and proportions 0(?),1,2,3,4+
+- Location: Manchester and New Haven, CT
+
+Other notes:
+* Treatment effects are pooled across sites (need sample sizes)
+* Time limits become salient at about 8 quarters (time limit)
+
+
+## NEWWS
