@@ -27,7 +27,17 @@ List of baseline characteristics across sites
 - Racial Composition
 - Hours
 
+## Local earnings/wage data
+- We need to think about most appropriate sources of wage data (ACS vs CPS)
+-
+
+## School district finances
+- Schooling inputs can distort
+- Use [school district finance survey data](https://nces.ed.gov/ccd/f33agency.asp)
+- Want to test if this improves fit at all
+
 # Wrinkles to baseline model
 - Multiple skills
 - Age-dependent parameters
 - Potential differences in up vs down across skill types and ages
+- School ages
