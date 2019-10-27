@@ -30,10 +30,22 @@ List of baseline characteristics across sites
 - Response rates for follow up surveys
 - Overall sample sizes
 
+## Local earnings/wage data
+- We need to think about most appropriate sources of wage data (ACS vs CPS)
+-
+
+## School district finances
+- Schooling inputs can distort
+- Use [school district finance survey data](https://nces.ed.gov/ccd/f33agency.asp)
+- Want to test if this improves fit at all
+
 # Wrinkles to baseline model
 - Multiple skills
 - Age-dependent parameters
 - Potential differences in up vs down across skill types and ages
+<<<<<<< HEAD
+- School ages
+=======
 
 # Available Data
 ## LA-GAIN
@@ -93,3 +105,4 @@ Other notes:
 - [ ] Come up with efficient way to present pertinent information, including differences in sample design
 - [ ] Seems like common distinction between long-term recipient and recent applicant. Can we use this across all?
   * this may be a good task to put the kids onto
+>>>>>>> a24378f8068bb4dba9c33464185e4bf286314bcb
