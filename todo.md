@@ -93,6 +93,8 @@ Other notes:
 * Treatment effects are pooled across sites (need sample sizes)
 * Time limits become salient at about 8 quarters (time limit)
 ## NEWWS
+
+
 # Other TODOs
 - [ ] Come up with efficient way to present pertinent information, including differences in sample design
 - [ ] Seems like common distinction between long-term recipient and recent applicant. Can we use this across all?

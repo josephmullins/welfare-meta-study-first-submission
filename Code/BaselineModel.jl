@@ -9,18 +9,27 @@ mutable struct Parameters
     αc::Float64 #<- coefficient on consumption
     αθ::Float64 #<- coefficient on skills
     αH::Float64 #<- disutility of work
-    αP::Float64 #<- disutility of program participation (add something here?)
+    αA::Float64 #<- disutility of program participation (add something here?)
     δI::Array{Float64,2} #<- Cobb Douglas share on investment (skill by age)
     δθ::Array{Float64,2} #<- Cobb Douglas share on own skills (skill by age)
     p̃::Array{Float64,1} #<- relative price of investment good (home vs exterior care)
-    ϵ::Array{Float64,1} #<- elasticity of investments across periods
+    ϵ::Array{Float64,1} #<- elasticity of investments across periods (by age)
 
     wage::Array{Float64,1} #<- wage at each site
     β::Float64 #<- discounting (won't matter in lots of sites)
 end
 
 # How do we want to do this!?
+# program components:
+# - subsidy to childcare price
+# - disregards, etc
+# - time limit (iff applicable)
+# - employment services/work requirement
 
+# important Q: what is necessary for simulation?
 
+# function to take parameters and simulate a bunch of things?
 
-# function to take parameters and simulate a bunch of things
+# estimation:
+
+# let's do an example: no code.
