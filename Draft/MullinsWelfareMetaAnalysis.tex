@@ -271,6 +271,38 @@ This technique echoes the identification approach of \cite{GroggerMichal2003}, w
 
 \subsection{Estimation}
 
+\section{Modelling Transfers and Policies}
+We will assume that program participation involves receipt of transfer payments from the program, as well as food stamps. When the age of the child is greater than 17, we will assume that all only SNAP payments are made and all other policies are turned off.
+
+Let $n$ be the numer of children, $g$ the state in which the program takes place, $y$ the year, and $\omega$ the current usage of time limits. $E$ is monthly earnings.
+
+\subsection{Control Groups}
+For AFDC we will simplify by assuming that eligibility coincides with the point at which benefits are equal to zero:
+\[\text{AFDC}(g,n,y,E) = \max\{B(g,n,y) - (1-0.33)\times\max\{E - 120,0\},0\} \]
+here $B(g,n,y)$ is the benefit standard.
+Food stamp payments are:
+\[\text{SNAP}(g,n,y,E) = G(g,n,y) - 0.3(0.8*E + \text{AFDC} - 134)\]
+It will be reasonable to approximate eligibility as the net income level that sets SNAP payments to zero.
+
+\subsection{MFIP}
+As in the control case, we'll abstract away from eligibility, since it should line up with payments reaching 0. In this case we can ignore food stamps and calculate:
+\[\text{MFIP}(g,n,y,E) = \max\{\min\{1.2(B(g,n,y)+G(g,n,y)) - (1-0.38)*E,B(g,n,y)+G(g,n,y)\},0\} \]
+where $B$ and $G$ are the benefit standards and maximum food stamp payment in Minnesota for each number of kids ($n$) and year ($y$). When the age of the child exceeds 17, we will assume that individuals collect food stamps only, and the usual rules apply (i.e. same as control).
+
+\subsection{CT-Jobs First}
+Here we have to model eligiblity, since no income is disregarded. Let $PG(n,y)$ be the poverty guideline for $n$ kids in year $y$. This is the same as the poverty level for a family of size $1+n$. The payment is:
+\[\text{CTJF}(g,n,y,E) = \mathbf{1}\{E<PG(n,y)\}(B(g,n,y)+G(g,n,y)) \]
+We will assume a time limit of 7 quarters (21 months). We will assume that individuals who reach the time limit collect food stamps only, and are subject to the same rules as the control group.
+
+\subsection{FTP}
+Payments in this case are:
+\[\text{FTP}(g,n,y,E) = \max\{B(g,n,y) - 0.5\max\{E-200,0\},0\} \]
+and we approximate eligiblity as a above. Food stamps are the same as the control group.
+
+For now, we assume a time limit of two years (8 quarters) and assume that individuals who have reached the time limit receive food stamps only, and the rules that apply are the same as the control case.
+
+\subsection{Work Requirements}
+We model work requirements as a utility cost of participating in welfare when the individual is not working. We model this is a single parameter, $\alpha_{WR}$, which applies to every program except for the MFIP Incentives Only treatment arm.
 
 %\bibliography{../../../master.bib/OrgLibrary}
 \bibliography{CashTransfersBib}
