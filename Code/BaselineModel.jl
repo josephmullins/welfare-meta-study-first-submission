@@ -95,13 +95,21 @@ function CalculateUtilities!(M)
 		if age<Q
 			αV = M.αθ*M.δI[age]*M.β*M.Γδ[age+1]
 			if M.TL[s,tr]
-				for wu=1:M.TLmax[s,tr]+1
+				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2
 						Y = M.budget[s,tr,nk,age0,q,wu,p,h]
 						hr = (h-1)*30
 						U = (M.αC+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hrs+hrs*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR*(p-1)*(2-h)
 						M.utility[s,tr,nk,age0,q,wu,p,h] = U
 					end
+					# if reach max time limit, only get food stamps
+				end
+				wu = M.TLmax[s,tr]+1
+				for p=1:2,h=1:2
+					Y = M.budget[s,tr,nk,age0,q,wu,p,h]
+					hr = (h-1)*30
+					U = (M.αC+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hrs+hrs*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
+					M.utility[s,tr,nk,age0,q,wu,p,h] = U
 				end
 			else
 				for p=1:2,h=1:2
