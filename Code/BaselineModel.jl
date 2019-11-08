@@ -19,7 +19,7 @@ mutable struct Model
 
 	# prices
 	pc::Array{Float64,1} #<- one per age of child (relative price)
-	earnings::Array{Float64,1} #<- number of sites x number of quarters
+	earnings::Array{Float64,2} #<- number of sites x number of quarters
 	wq::Float64 #<- one for now, may need more!
 
 	# policies (maybe don't need to store these all here? Only matter for budget))
@@ -30,7 +30,7 @@ mutable struct Model
 	D::Array{Float64,3} #<- Dollar disregard(NumChild,Site,Arm) (3 x NS x NT)
 	R::Array{Float64,2} #<- % disregard(Site,Arm) NS x NT
 	Bf::Array{Float64,4} #<- max food stamp benefit(Quarter,NumChild) (Q x 3)
-	τ::Array{Float64,2} #<- NS x NT, childcare subsidy. Cool!
+	τ::Array{Float64,2} #<- NS x NT, childcare subsidy.
 
 	# primitives
 	πk::Array{Float64,2} #<- distribution of age youngest NS x 3 (<=2,3-5,6+)
@@ -171,40 +171,27 @@ function SolveModel!(M::Model,s,tr,nk,age0)
 				v0 = M.utility_welf[s,tr,nk,age0,q,wu,1] + M.β*M.V[s,tr,nk,age0,q+1,wu]
 				v1 = M.utility_welf[s,tr,nk,age0,q,wu,2] + M.β*M.V[s,tr,nk,age0,q+1,max(wu+1,M.TLmax[s,tr]+1)]
 				M.V[s,tr,nk,age0,q,wu] = log(exp(v0)+exp(v1))
-				M.welf_prob[s,yt,nk,age0,q,wu] = 1/(1+exp(v0-v1))
+				M.welf_prob[s,tr,nk,age0,q,wu] = 1/(1+exp(v0-v1))
 			end
 		else
 			# no time limits
 			# an efficiency gain here, potentially
 			v0 = M.utility_welf[s,tr,nk,age0,q,1,1] + M.β*M.V[s,tr,nk,age0,q+1,1]
 			v1 = M.utility_welf[s,tr,nk,age0,q,1,2] + M.β*M.V[s,tr,nk,age0,q+1,1]
-			M.welf_prob[s,yt,nk,age0,q,1] = 1/(1+exp(v0-v1))
+			M.welf_prob[s,tr,nk,age0,q,1] = 1/(1+exp(v0-v1))
 		end
 	end
 end
 
 
 
-
-
-# separate by treatment and control?
-function SimulateOutcomes(R,Q)
-	# R - number of simulations
-	# Q - number for quarters
-	# participation, employment, earnings, childcare expense
-	E = zeros(R,Q) #<- employment
-	A = zeros(R,Q) #<- participation
-	A2 = zeros(R,Q) #<- receipt
-	Y = zeros(R,Q) #<- earnings
-	L = zeros(R,Q) #<- work
-end
-
 # initial variables: age of youngest, # of kids, wage
 
 # parameters needed:
 # - δI,δθ,wq,pc*τ,ϵ
 
-function Simulate(Q,earnings,A_prob,L_prob,payment,age0)
+# if we want the government's expenditure, it's Xc*τ?
+function Simulate(M::Model,Q,s,tr,nk,age0)
 	A = zeros(Q) #<- participation
 	A2 = zeros(Q) #<- receipt
 	Y = zeros(Q) #<- earnings
@@ -212,18 +199,55 @@ function Simulate(Q,earnings,A_prob,L_prob,payment,age0)
 	θ = zeros(Q+1)
 	Xc = zeros(Q)
 	age = age0*4 #<- convert age to quarterly number
-	time_use = 0
+	wu = 0
 	for q=1:Q
-		A[q] = rand()<A_prob[age,1+time_use] #<- no heterogeneity here
-		L[q] = rand()<L_prob[age,1+A[q]]
-		Y[q] = earnings[q,1+L[q]] #<-
-		A2[q] = payment[q,1+L[q]]*A[q] #<- add food stamps by default (for now)
+		welf = rand()<M.welf_prob[s,tr,nk,age0,q,1+wu] #<- no heterogeneity here
+		L[q] = rand()<M.work_prob[s,tr,nk,age0,q,1+welf]
+		Y[q] = L[q]*M.earnings[s,q] #<-
+		if welf
+			payment = M.budget[s,tr,nk,age0,q,2,1+L[q]]-M.earnings[s,q]
+			A2[q] = payment
+		end
 		inc = Y[q] + A2[q]
 		h = 30*L[q]
-		Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
-		θq[q+1] = δI[1+age]*log(inc + wq*(112-h)) - 1/(1-ϵ)*log(112-h + h*pc^(1-ϵ)) + δθ[1+age]*θ[q]
-		time_use += A[q]
+		if age<=17*4
+			pc = M.pc[1+age]*(1-M.τ[s,tr])
+			ϵ = M.ϵ[1+age]
+			Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
+			θq[q+1] = M.δI[1+age]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)*log(112-h + h*pc^(1-ϵ)) + M.δθ[1+age]*θ[q]
+		end
 		age += 1
+		if M.TL[s,tr]
+			A[q] = (age<=17*4)*(A2[q]>0)*(wu<M.TLmax[s,tr]+1)
+			wu = max(wu+welf,M.TLmax[s,tr]+1)
+		else
+			A[q] = (age<=17*4)*(A2[q]>0)
+		end
 	end
 	return A,A2,Y,L,θ,Xc
+end
+
+# simulate R panels of length Q for a site x treatment combination
+function Simulate(M::Model,R,Q,s,tr)
+	# ay_cat = rand(Multinomial(M.πk[s,tr]))
+	# cats = [0:2,3:5,6:16]
+	# age0 =
+	A = zeros(Q,R) #<- participation
+	A2 = zeros(Q,R) #<- receipt
+	Y = zeros(Q,R) #<- earnings
+	L = zeros(Q,R) #<- work
+	θ = zeros(Q+1,R)
+	Xc = zeros(Q,R)
+	AGE = zeros(Q,R) #<- convert age to quarterly number
+	age_dist = Multinomial(1,M.πk[s,:])
+	age_cats = [0:2,3:5,6:16]
+	nk_dist = Multinomial(1,M.πK[s,:])
+	for r=1:R
+		ac = rand(age_dist)
+		age0 = rand(age_cats[ac])
+		nk = rand(nk_dist)
+		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r] = Simulate(M,Q,s,tr,nk,age0)
+		AGE[:,r] = age0 + floor((0:Q-1)/4)
+	end
+	return AGE,A,A2,Y,L,θ,Xc
 end
