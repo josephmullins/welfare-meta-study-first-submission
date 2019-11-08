@@ -278,15 +278,15 @@ Let $n$ be the numer of children, $g$ the state in which the program takes place
 
 \subsection{Control Groups}
 For AFDC we will simplify by assuming that eligibility coincides with the point at which benefits are equal to zero:
-\[\text{AFDC}(g,n,y,E) = \max\{B(g,n,y) - (1-0.33)\times\max\{E - 120,0\},0\} \]
+\[\text{AFDC}(g,n,y,E) = \max\{B(g,n,y) - (1-0.33)\max\{E - 120,0\},0\} \]
 here $B(g,n,y)$ is the benefit standard.
 Food stamp payments are:
-\[\text{SNAP}(g,n,y,E) = G(g,n,y) - 0.3(0.8*E + \text{AFDC} - 134)\]
+\[\text{SNAP}(g,n,y,E) = G(g,n,y) - 0.3(0.8E + \text{AFDC} - 134)\]
 It will be reasonable to approximate eligibility as the net income level that sets SNAP payments to zero.
 
 \subsection{MFIP}
 As in the control case, we'll abstract away from eligibility, since it should line up with payments reaching 0. In this case we can ignore food stamps and calculate:
-\[\text{MFIP}(g,n,y,E) = \max\{\min\{1.2(B(g,n,y)+G(g,n,y)) - (1-0.38)*E,B(g,n,y)+G(g,n,y)\},0\} \]
+\[\text{MFIP}(g,n,y,E) = \max\{\min\{1.2(B(g,n,y)+G(g,n,y)) - (1-0.38)E,B(g,n,y)+G(g,n,y)\},0\} \]
 where $B$ and $G$ are the benefit standards and maximum food stamp payment in Minnesota for each number of kids ($n$) and year ($y$). When the age of the child exceeds 17, we will assume that individuals collect food stamps only, and the usual rules apply (i.e. same as control).
 
 \subsection{CT-Jobs First}
