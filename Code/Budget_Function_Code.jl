@@ -38,7 +38,7 @@ for i in 1:3
     First_Year[i]=(minimum(Control.Year))
 end
 
-Earnings=zeros(3,68)
+Earnings=zeros(3,72) # I add some extra years for the parents whose kids will age out
 
 for i in 1:3
     Control = Quarterly_Data[Quarterly_Data[:, :Site] .== site[i], :]
@@ -51,7 +51,7 @@ for i in 1:3
     for j in 1:observed
         Earnings[i,j]=Control[j,:Monthly_Earnings]
     end
-    for j in (observed+1):68
+    for j in (observed+1):72
         Earnings[i,j]=coef(lm2)[1]+j*coef(lm2)[2]
     end
 end
@@ -68,7 +68,7 @@ CTJF started 2 years after the others. Hence, I need to shift some years by 2.
 =#
 
 
-SNAP=zeros(3,3,68) # first index is the number of kids, second is site, third is quarter
+SNAP=zeros(3,3,17*4) # first index is the number of kids, second is site, third is quarter
 for i in 1:3
     SNAPRulesC = SNAPRules[SNAPRules[:, :NumChild] .== i, :]
     for j in 1:3
@@ -81,6 +81,23 @@ for i in 1:3
     end
 end
 SNAP
+SNAPRules
+
+
+# need to consider parents whose kids aged out
+SnapRules_0=SNAPRules[SNAPRules[:, :NumChild] .== 0, :]
+SNAP0=zeros(3,72)
+for i in 1:3
+
+    SnapRules_02 = SnapRules_0[SnapRules_0[:, :year] .>= First_Year[i], :]
+            for k in 1:18
+                for z in 1:4
+                    SNAP0[i,(4*k+z-4)]=SnapRules_02.MA[k]
+                end
+            end
+
+end
+SNAP0
 
 
 
@@ -151,34 +168,14 @@ Eligible=[0, 1]
 Work=[0,1]
 Program=[0,1]
 
-Disregard=zeros(3,3) # one fixed disregard for each site and arm
-Disregard[:,:].=120 # first arm is AFDC
-Disregard[2,2].=200 # FTP disregard higher
-Disregard[2,3].=200
-# CTJF, unbounded disregard irrelevant by 1.0 variable disregard
 
 
 
-MTR= zeros(3,3) # this is the percent disregard, sort of like a marginal tax rate
-MTR[:,1].=0.33 # 33 percent for AFDC, control arm
-MTR[1,2]=1.0 # CTJF= disregard all
-MTR[1,3]=1.0 # CTJF= disregard all
-MTR[3,2]=0.38 # MFIP= 0.38
-MTR[3,3]=0.38
-
-
-
-Generosity=zeros(3,3,3,68) # nk, site, arm, quarter
-Generosity[:,:,1,:].=Benefit#.+SNAP # for MFIP, FTP, CTJF control, it's the same as federal benefits
-Generosity[:,:,2,:].=Benefit#.+SNAP
-Generosity[:,:,3,:].=Benefit#.+SNAP
-
-
-Generosity[:,1,2,:].=543 #.+SNAP[:,1,:] # for CT
-Generosity[:,1,3,:].=543 #.+SNAP[:,1,:]
-
-# budget(site,arm,NumChild,age0,quarter,program,work, eligible) (NS x NT x 3 x 17 x Q x 2 x 2 x 2)
+# budget(site,arm,NumChild,age0,quarter,eligible,program,work) (NS x NT x 3 x 17 x Q x 2 x 2 x 2)
 budget1=zeros(3,3,3,17,17*4,2,2,2)
+3*3*3*17*17*4*2*2*2
+1+1
+
 for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-indexing)
     for q in 1:68 # next loop is for quarter
         for nk in 1:3 # num kids
@@ -187,12 +184,35 @@ for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-ind
                     for p in 1:2 # program, aka participating or not
                         for site in 1:3
                             for arm in 1:3
-                            budget1[site,arm,nk,a0,q,p,w,e]=Earnings[site,q]*Work[w]+
-                                                            Eligible[e]*Program[p]*
-                                                            max( Generosity[nk,site,arm, q]+SNAP[nk, site, q]-
-                                                               (Earnings[site,q]*Work[w]-Disregard[site,arm])*(1-MTR[site,arm])  ,0)
+                            AFDC=0
+                            if arm==1
+                                AFDC=Eligible[e]*max(Benefit[nk,site,q]-(1-0.33)*max(Earnings[site,q]*Work[w]-120,0),0)
+                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]+AFDC-134,0),0)
+                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(AFDC+Foodstamps)+
+                                                                            Earnings[site,q]*Work[w]
+                            elseif arm!==1 && site==1
+                                    Too_rich=0
+                                    if Earnings[site,q]>Poverty[nk, site, q]
+                                        Too_rich=Work[w] # priced out of benefits AND food stamps if you pass a threshold
+                                    end
 
-
+                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )# I can probably do better than copy-pasting...
+                                CTJF=(SNAP[nk,site, q]+Benefit[nk,site,q])*(1-Too_rich)
+                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*Foodstamps)+
+                                                                            Earnings[site,q]*Work[w]
+                                # in this formulation, parents can be kicked off food stamps only till their kids age out
+                            elseif arm!==1 && site==2
+                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
+                                FTP=max(Benefit[nk,site,q]-0.5*max(Earnings[site,q]*Work[w]-200,0),0)
+                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(FTP*Eligible[e]+(1-Eligible[e])*Foodstamps)+
+                                                                            Earnings[site,q]*Work[w]
+                            elseif arm!==1 && site==3
+                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
+                                D=Benefit[nk,site,q]+SNAP[nk,site, q]
+                                MFIP=max( min(1.2*D-(1-0.38)*Earnings[site,q]*Work[w],D)  ,0)
+                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(MFIP*Eligible[e]+(1-Eligible[e])*Foodstamps)+
+                                                                            Earnings[site,q]*Work[w]
+                                                                        end
                             end
                         end
                     end
@@ -201,4 +221,21 @@ for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-ind
         end
     end
 end
-budget1[:,:,:,:,:,:,2,:]
+budget1=budget1.+0.0000001
+
+
+Budget_Ageout=zeros(3,72,2,2)
+for site in 1:3
+    for q in 1:72
+        for w in 1:2
+            for p in 1:2
+                Budget_Ageout[site,q,p,w]=Earnings[site,q]*Work[w]+Program[p]*max(SNAP0[site,q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0)
+            end
+        end
+    end
+end
+Budget_Ageout
+Budget_Ageout=Budget_Ageout.+0.000001
+TimeLimit_Ind=[false true true; false true true; false false false]
+
+TimeLimits=[0 7 7; 0 8 8; 0 0 0]
