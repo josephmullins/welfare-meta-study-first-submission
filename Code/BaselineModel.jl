@@ -315,6 +315,8 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 			ϵ = M.ϵ[age]
 			Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
 			θ[q+1] = M.δI[age]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)* M.δI[age]*log(112-h + h*pc^(1-ϵ)) + M.δθ[age]*θ[q]
+		else
+			θ[q+1] = θ[q]
 
 		end
 
@@ -355,7 +357,7 @@ function Simulate(M::Model,R,Q,s,tr)
 		nk2=findmax(nk)[2]
 		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r] = Simulate(M,Q,s,tr,nk2,age0)
 		for i in 1:Q
-		AGE[i,r] = age0 + floor((i)/4) # ages start at 0, had issue with 0-indexinf
+			AGE[i,r] = age0 + floor((i-1)/4) # ages start at 0, had issue with 0-indexinf
 		end
 	end
 	return AGE,A,A2,Y,L,θ,Xc
