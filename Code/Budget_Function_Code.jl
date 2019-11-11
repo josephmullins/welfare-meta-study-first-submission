@@ -1,9 +1,9 @@
 # budget matrix
-cd("/Users/FilipB/github/welfare-meta-study/Code")
+#cd("/Users/FilipB/github/welfare-meta-study/Code")
 
-using CSV
-using GLM
-using DataFrames
+#using CSV
+#using GLM
+#using DataFrames
 budget1=Array{Float64,8}# budget(site,arm,NumChild,age0,quarter,program,work, eligible) (NS x NT x 3 x 17 x Q x 2 x 2 x 2)
 
 Quarterly_Data=CSV.read("../Data/QuarterlyData.csv")
@@ -24,7 +24,7 @@ I observe the following rules:
     There are 17*4=68 quarters
 
 =#
-
+println("Checkpoint 1")
 
 budget1=zeros(3,3,3,17,17*4,2,2,2)
 
@@ -128,7 +128,7 @@ end
 Benefits Guideline
 
 =#
-
+println("Checkpoint 2")
 State=["Connecticut" "Florida" "Minnesota"]
 
 BenStd
@@ -175,46 +175,50 @@ Program=[0,1]
 budget1=zeros(3,3,3,17,17*4,2,2,2)
 3*3*3*17*17*4*2*2*2
 1+1
-
-for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-indexing)
-    for q in 1:68 # next loop is for quarter
-        for nk in 1:3 # num kids
-            for e in 1:2 # eligible or not
-                for w in 1:2 # working or not
-                    for p in 1:2 # program, aka participating or not
-                        for site in 1:3
-                            for arm in 1:3
-                            AFDC=0
-                            if arm==1
-                                AFDC=Eligible[e]*max(Benefit[nk,site,q]-(1-0.33)*max(Earnings[site,q]*Work[w]-120,0),0)
-                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]+AFDC-134,0),0)
-                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(AFDC+Foodstamps)+
+println("Checkpoint 3")
+@time @inbounds @simd for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-indexing)
+    @inbounds @simd    for q in 1:68 # next loop is for quarter
+    @inbounds @simd         for nk in 1:3 # num kids
+    @inbounds @simd             for e in 1:2 # eligible or not
+    @inbounds @simd                 for w in 1:2 # working or not
+    @inbounds @simd                     for p in 1:2 # program, aka participating or not
+    @inbounds @simd                         for site in 1:3 # loop over controls
+                                                AFDC=Eligible[e]*max(Benefit[nk,site,q]-(1-0.33)*max(Earnings[site,q]*Work[w]-120,0),0)
+                                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]+AFDC-134,0),0)
+                                                budget1[site,1,nk,a0,q,e,p,w]=Program[p]*(AFDC+Foodstamps)+
                                                                             Earnings[site,q]*Work[w]
-                            elseif arm!==1 && site==1
+
+                                # CTJF treatment
+                                if site==1 # next I fill the treatment arms in one by one
                                     Too_rich=0
-                                    if Earnings[site,q]>Poverty[nk, site, q]
+                                    if Earnings[site,q]>Poverty[nk, site, q] # reminder that first index
                                         Too_rich=Work[w] # priced out of benefits AND food stamps if you pass a threshold
                                     end
-
-                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )# I can probably do better than copy-pasting...
-                                CTJF=(SNAP[nk,site, q]+Benefit[nk,site,q])*(1-Too_rich)
-                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*Foodstamps)+
+                                    Foodstamps_C=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )# I can probably do better than copy-pasting...
+                                    CTJF=(SNAP[nk,site, q]+Benefit[nk,1,q])*(1-Too_rich)
+                                    budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*Foodstamps_C)+
                                                                             Earnings[site,q]*Work[w]
-                                # in this formulation, parents can be kicked off food stamps only till their kids age out
-                            elseif arm!==1 && site==2
-                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
+                                    budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
+                                    # in this formulation, parents can be kicked off food stamps only till their kids age out
+                                    # that seems weird
+                                # FTP treatment
+                                elseif site==2
+                                Foodstamps_F=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
                                 FTP=max(Benefit[nk,site,q]-0.5*max(Earnings[site,q]*Work[w]-200,0),0)
-                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(FTP*Eligible[e]+(1-Eligible[e])*Foodstamps)+
+                                budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(FTP*Eligible[e]+(1-Eligible[e])*Foodstamps_F)+
                                                                             Earnings[site,q]*Work[w]
-                            elseif arm!==1 && site==3
-                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
+                                budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
+                                elseif site==3
+                            # MFIP treatment
+                                Foodstamps_M=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
                                 D=Benefit[nk,site,q]+SNAP[nk,site, q]
                                 MFIP=max( min(1.2*D-(1-0.38)*Earnings[site,q]*Work[w],D)  ,0)
-                                budget1[site,arm,nk,a0,q,e,p,w]=Program[p]*(MFIP*Eligible[e]+(1-Eligible[e])*Foodstamps)+
+                                budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(MFIP*Eligible[e]+(1-Eligible[e])*Foodstamps_M)+
                                                                             Earnings[site,q]*Work[w]
-                                                                        end
+                                budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
                             end
-                        end
+                        end # end site loop
+
                     end
                 end
             end
@@ -222,14 +226,16 @@ for a0 in 1:17 # outermost loop is for child initial age, 0-17 (shifted by 1-ind
     end
 end
 budget1=budget1.+0.0000001
+minimum(budget1)
+findmax(budget1[:,3,:,:,:,:,:,:])
 
 
 Budget_Ageout=zeros(3,72,2,2)
-for site in 1:3
-    for q in 1:72
-        for w in 1:2
-            for p in 1:2
-                Budget_Ageout[site,q,p,w]=Earnings[site,q]*Work[w]+Program[p]*max(SNAP0[site,q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0)
+@time @inbounds @simd for site in 1:3
+    @inbounds @simd     for q in 1:72
+    @inbounds @simd         for w in 1:2
+    @inbounds @simd             for p in 1:2
+                        Budget_Ageout[site,q,p,w]=Earnings[site,q]*Work[w]+Program[p]*max(SNAP0[site,q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0)
             end
         end
     end

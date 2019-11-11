@@ -2,9 +2,15 @@ using Random
 using Distributions
 using Revise
 using Profile
-includet("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
+using CSV
+using GLM
+using DataFrames
+cd("/Users/FilipB/github/welfare-meta-study/Code")
+include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
 
 budget1
+findmax(budget1[:,3,:,:,:,:,:,:])
+
 Budget_Ageout
 Earnings
 TimeLimit_Ind
@@ -127,8 +133,8 @@ function CalculateUtilities!(M)
 			if M.TL[s,tr]
 				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2
-						Y = M.budget[s,tr,nk,age0,q,2,p,h] # I change eligibility to be a 0-1 variable
-						hr = (h-1)*30
+						Y = M.budget[s,tr,nk,age0,q,2,p,h] # I change eligibility to be a 0-1 variable, 2 indexing eligible
+						hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
 						U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hr+hr*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR*(p-1)*(2-h)
 						M.utility[s,tr,nk,age0,q,wu,p,h] = U
 					end
@@ -216,7 +222,7 @@ function SolveModel!(M::Model,s,tr,nk,age0)
 end
 
 
-Mod1=Model(3,3,17,budget1,Budget_Ageout,17*4,Earnings,TimeLimit_Ind,TimeLimits,τ)
+
 
 function initialize_model()
 	Mod1=Model(3,3,17,budget1,Budget_Ageout,17*4,Earnings,TimeLimit_Ind,TimeLimits,τ)
@@ -235,6 +241,33 @@ function initialize_model()
 	return Mod1
 end
 
+@time Mod1=initialize_model()
+
+
+
+function UpdateSpecificParams!(M::Model;
+	αc=M.αc, αθ=M.αθ, αH=M.αH, αA=M.αA,αWR=M.αWR,
+	δI=M.δI,δθ=M.δθ,
+	ϵ=M.ϵ, wq=M.wq,
+	pc=M.pc)
+	M.αc=αc
+	M.αθ=αθ
+	M.αH=αH
+	M.αA=αA
+	M.αWR=αWR
+	M.δI=δI
+	M.δθ=δθ
+	M.ϵ=ϵ
+	M.pc=pc
+	M.wq=M.wq
+
+end
+Mod1.αc
+UpdateSpecificParams!(Mod1; αc=0.3)
+Mod1.αc
+UpdateSpecificParams!(Mod1)
+Mod1.αc
+1+1
 
 
 # initial variables: age of youngest, # of kids, wage
@@ -251,32 +284,38 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	θ = zeros(Q+1)
 	Xc = zeros(Q)
 	age = age0*4 #<- convert age to quarterly number
-	wu = 0
+	if age==0
+		age=1 # I don't want to worry about 1-indexing
+	end
+	wu = 1 # changed it to 1 here
 	for q=1:Q
 
-		welf = rand()<M.welf_prob[s,tr,nk,age0+1,q,1+wu] #<- no heterogeneity here
-		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,1+wu,1+welf] #pretty sure this needs another dimension
+		welf = rand()<M.welf_prob[s,tr,nk,age0+1,q,wu] #<- no heterogeneity here
+		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,wu,1+welf] #pretty sure this needs another dimension
 		Y[q] = L[q]*M.earnings[s,q] #<-
 
 		if welf
 			payment=0
 			if age<=17*4
-			payment = M.budget[s,tr,nk,age0+1,q,2,1+convert(Int,L[q]),1+convert(Int,welf)]-M.earnings[s,q]
+				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				# only subtract earnings from budget if working...I think???
 			else
-				payment = M.budget_ageout[s,q,1+convert(Int,L[q]),1+convert(Int,welf)]-M.earnings[s,q]
+				payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+
+
 			end
-					  #M.budget[s,tr,nk,age0,q,1,p,h]
-					  #M.budget_ageout[s,q,p,h]
+
 			A2[q] = payment
 		end
 
 		inc = Y[q] + A2[q]
 		h = 30*L[q]
-		if age<=16*4
-			pc = M.pc[1+age]*(1-M.τ[s,tr])
-			ϵ = M.ϵ[1+age]
+		if age<=17*4
+			pc = M.pc[age]*(1-M.τ[s,tr])
+			ϵ = M.ϵ[age]
 			Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
-			θ[q+1] = M.δI[1+age]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)*log(112-h + h*pc^(1-ϵ)) + M.δθ[1+age]*θ[q]
+			θ[q+1] = M.δI[age]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)* M.δI[age]*log(112-h + h*pc^(1-ϵ)) + M.δθ[age]*θ[q]
+
 		end
 
 
@@ -284,7 +323,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		age += 1
 		if M.TL[s,tr]
 			A[q] = (age<=17*4)*(A2[q]>0)*(wu<M.TLmax[s,tr]+1)
-			wu = max(wu+welf,M.TLmax[s,tr]+1)
+			wu = min(wu+welf,M.TLmax[s,tr]+1) # I think this should be min not max?
 		else
 			A[q] = (age<=17*4)*(A2[q]>0)
 		end
@@ -323,11 +362,78 @@ function Simulate(M::Model,R,Q,s,tr)
 end
 
 
+
+
+
 @time Mod2=initialize_model()
-@time S1=Simulate(Mod2,10000,30,1,1)
 
 
 
-(S1[2])
 
-S1[6][:,10:15]
+
+
+
+
+#=
+
+
+Below are a few sanity checks
+
+=#
+
+
+
+@time S1_c=Simulate(Mod2,10000,30,1,1)
+@time S2_c=Simulate(Mod2,10000,30,2,1)
+@time S3_c=Simulate(Mod2,10000,30,3,1)
+
+
+mean(S1_c[2])
+mean(S2_c[2])
+mean(S3_c[2])
+
+
+mean(S1_c[3])
+mean(S2_c[3])
+mean(S3_c[3])
+
+@time S1_t=Simulate(Mod2,100,30,1,3)
+@time S2_t=Simulate(Mod2,100,30,2,3)
+@time S3_t=Simulate(Mod2,100,30,3,3)
+
+budget1[3,3,1,3,25,2,2,2]
+Earnings[3,25]
+
+mean(S1_t[2])
+mean(S2_t[2])
+mean(S3_t[2])
+
+
+Mod2.welf_prob[1,1,:,:,:,:]
+
+Mod2.welf_prob[1,2,:,:,:,:]
+
+mean(S1_t[3])
+mean(S2_t[3])
+mean(S3_t[3])
+
+mean(S1_c[4])
+mean(S1_t[4])
+
+mean(S1_c[5])
+mean(S1_t[5])
+
+mean(S1_c[6])
+mean(S1_t[6])
+
+mean(S1_c[7])
+mean(S1_t[7])
+findmax(budget1[:,3,:,:,:,:,:,:])
+
+UpdateSpecificParams!(Mod2; pc=ones(length(Mod2.pc))*0.1,ϵ=ones(length(Mod2.ϵ))*0.1)
+
+@time S1_t=Simulate(Mod2,100,30,1,3)
+
+mean(S1_t[6])
+
+S1_t[6]
