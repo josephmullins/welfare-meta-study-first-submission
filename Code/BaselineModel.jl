@@ -21,9 +21,9 @@ mutable struct Model
 	β::Float64 #<- discounting
 
 	# production
-	δI::Array{Float64,1} #<- one per age of child
-	δθ::Array{Float64,1} #<- one per age of child
-	ϵ::Array{Float64,1} #<- one per age of child
+	δI::Array{Float64,1} #<- one per age of child in years
+	δθ::Array{Float64,1} #<- one per age of child in years
+	ϵ::Array{Float64,1} #<- one per age of child in years
 
 	# prices
 	pc::Array{Float64,1} #<- one per age of child (relative price)
@@ -31,7 +31,8 @@ mutable struct Model
 	wq::Float64 #<- one for now, may need more!
 
 	# policies (maybe don't need to store these all here? Only matter for budget))
-	αWR::Float64 #<- cost imposed by work requirement
+	αWR_p::Float64 #<- cost imposed by work requirement
+	αWR::Array{Float64,2} # only some arms have work reqs
 	TL::Array{Bool,2} #<- time limit indicator, NS x NT
 	TLmax::Array{Int64,2} #<- length of time limit NS x NT
 
@@ -45,11 +46,11 @@ mutable struct Model
 	Γδ::Array{Float64,1} #<- recursive coefficient for investment value
 	budget::Array{Float64,8} #  budget(site,arm,NumChild,age0,quarter,eligible,program,work)
 	budget_ageout::Array{Float64,4} # (site,  quarter, program, work)
-	utility::Array{Float64,8} # utility(site,arm,NumChild,age0,quarter,program,work) (NS x NT x 3 x 16 x Q x 2 x 2)
+	utility::Array{Float64,8} # utility(site,arm,NumChild,age0,quarter,program,work) (NS x NT x 3 x 18 x Q x 2 x 2)
 	utility_welf::Array{Float64,7} # = log(exp(u[p,1]) + exp(u[p,2])) for p=1,2
-	V::Array{Float64,6} # value(site,arm,NumChild,age0,quarter,usage) (NS x NT x 3 x 16 x Q x TLmax+1)
+	V::Array{Float64,6} # value(site,arm,NumChild,age0,quarter,usage) (NS x NT x 3 x 18 x Q x TLmax+1)
 	welf_prob::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
-	work_prob::Array{Float64,7} # (site,arm,NumChild,age0,quarter,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
+	work_prob::Array{Float64,7} # (site,arm,NumChild,age0,quarter,welfare_choice) (NS x NT x 3 x 18 x Q x 2)
 
 end
 j=ones(6,6)*0.5
@@ -58,7 +59,7 @@ j=ones(6,6)*0.5
 
 
 
-function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ; πk=ones(3,3).*0.33,πK=ones(3,3).*0.33)
+function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs; πk=ones(3,3).*0.33,πK=ones(3,3).*0.33)
 	αc=0.5
 	αθ=0.5
 	αH=ones(3)*0.5 #<- one per site
@@ -66,17 +67,18 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	β=0.95 # seems like an ok guess
 
 	# production
-	δI=ones(qs)*0.5 #<- one per age of child
-	δθ=ones(qs)*0.5 #<- one per age of child, in quarters for compatibility later
-	ϵ=ones(qs)*0.5 #<- one per age of child
+	δI=ones(N_age)*0.5 #<- one per age of child in years
+	δθ=ones(N_age)*0.5 #<- one per age of child in years
+	ϵ=ones(N_age)*0.5 #<- one per age of child in years
 
 	# prices
-	pc=ones(qs)*0.5 #<- one per age of child (relative price)
+	pc=ones(N_age)*0.5 #<- one per age of child (relative price)
 	earnings=Earn #<- number of sites x number of quarters
 	wq=50.0 #<- one for now, may need more!
 
 	# policies (maybe don't need to store these all here? Only matter for budget))
-	αWR=10.0#<- cost imposed by work requirement
+	αWR_p=10.0#<- cost imposed by work requirement
+	αWR=Work_Reqs.*αWR_p
 	TL=TimeLimit_Ind #<- time limit indicator, NS x NT
 	TLmax=TimeLimits #<- length of time limit NS x NT
 		htl=findmax(TLmax)[1]+1
@@ -97,35 +99,36 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
 
-	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,wq,αWR,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,wq,αWR_p,αWR,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
 end
 
 
 
 function GetRecursiveCoefficient!(M)
-	Q = 17*4+1
-	M.Γδ[Q] = 1/(1-M.β)
+	Q = 18*4+1
+	M.Γδ[18+1] = 1/(1-M.β)
 	for q=Q-1:-1:1
-		M.Γδ[q] = 1 + M.β*M.δθ[q]*M.Γδ[q+1]
+		Age_Year=convert(Int,ceil(q/4))
+		M.Γδ[q] = 1 + M.β*M.δθ[Age_Year]*M.Γδ[Age_Year+1]
 	end
 end
-
 
 
 	#<- thought: only impact of # kids is on benefits, but should we maybe include something in alphaV?
 function CalculateUtilities!(M)
 	# first get recursive coefficient
-	Q = 17*4+1
-	for s=1:3,tr=1:3,nk=1:3,age0=1:17,q=1:Q
+	Q = 18*4+1
+	for s=1:3,tr=1:3,nk=1:3,age0=1:18,q=1:Q
 		age = age0*4+q
 		if age<Q
-			αV = M.αθ*M.δI[age]*M.β*M.Γδ[age+1]
+			Age_Year=convert(Int,ceil(q/4))
+			αV = M.αθ*M.δI[Age_Year]*M.β*M.Γδ[Age_Year+1]
 			if M.TL[s,tr]
 				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2
 						Y = M.budget[s,tr,nk,age0,q,2,p,h] # I change eligibility to be a 0-1 variable, 2 indexing eligible
 						hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-						U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hr+hr*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR*(p-1)*(2-h)
+						U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 						M.utility[s,tr,nk,age0,q,wu,p,h] = U
 					end
 					# if reach max time limit, only get food stamps
@@ -134,14 +137,14 @@ function CalculateUtilities!(M)
 				for p=1:2,h=1:2
 					Y = M.budget[s,tr,nk,age0,q,1,p,h] # if past time limit, then ineligible
 					hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hr+hr*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
+					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 					M.utility[s,tr,nk,age0,q,wu,p,h] = U
 				end
 			else
 				for p=1:2,h=1:2
-					Y = M.budget[s,tr,nk,age0,q,1,p,h]
+					Y = M.budget[s,tr,nk,age0,q,2,p,h]
 					hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[age])*log(112-hr+hr*M.pc[age]^(1-M.ϵ[age])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR*(p-1)*(2-h)
+					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 					M.utility[s,tr,nk,age0,q,1,p,h] = U
 				end
 			end
@@ -160,8 +163,8 @@ end
 
 # this function takes utility calculations and calculates work choice probabilities, as well as expected utilities for program participation choices
 function SolveWorkProb!(M::Model)
-	for s=1:3,tr=1:3,nk=1:3,age0=1:17,q=1:(length(M.δI)+1)
-		qT = (17-age0)*4
+	for s=1:3,tr=1:3,nk=1:3,age0=1:18,q=1:(length(M.δI)+1)
+		qT = (18-age0)*4
 		if M.TL[s,tr] & (q<=qT)
 			for wu = 1:M.TLmax[s,tr]+1
 				for p=1:2
@@ -186,11 +189,11 @@ end
 # let's assume we don't need values further than for probabilities
 # this model solves for welfare choice probabilities
 function SolveModel!(M::Model,s,tr,nk,age0)
-	Q = 17*4 + 1
+	Q = 18*4 + 1
 	# first solve terminal period values (improve this for choice probs, etc)
 	#M.V[s,tr,nk,age0,Q,:] .= log.(sum(exp.(M.utility[s,tr,nk,age0,Q,:,:])))
 	# terminal period for eligibility:
-	qT = (17-age0)*4
+	qT = (18-age0)*4
 	for q=Q-1:-1:1
 		age = age0 + min(q-1,4)# this was floor--should it not be min as both are ints?
 		if M.TL[s,tr] & (q<=qT)
@@ -215,14 +218,14 @@ end
 
 
 function initialize_model()
-	Mod1=Model(3,3,17,budget1,Budget_Ageout,17*4,Earnings,TimeLimit_Ind,TimeLimits,τ)
+	Mod1=Model(3,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind)
 	GetRecursiveCoefficient!(Mod1)
 	CalculateUtilities!(Mod1)
 	SolveWorkProb!(Mod1)
 	for s in 1:3
 		for tr in 1:3
 			for nk in 1:3
-				for age0 in 1:17
+				for age0 in 1:18
 					SolveModel!(Mod1,s,tr,nk,age0)
 				end
 			end
@@ -279,20 +282,22 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	end
 	wu = 1 # changed it to 1 here
 	for q=1:Q
-
+		Age_Year=convert(Int,ceil(q/4))
 		welf = rand()<M.welf_prob[s,tr,nk,age0+1,q,wu] #<- no heterogeneity here
 		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,wu,1+welf] #pretty sure this needs another dimension
 		Y[q] = L[q]*M.earnings[s,q] #<-
-
+		Elig=1 # start off eligible
+		if M.TL[s,tr] && wu==M.TLmax[s,tr]+1 # switch off only in places with time limits
+			Elig=0
+		end
 		if welf
 			payment=0
-			if age<=17*4
+			if age<=18*4 && Elig==1
 				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
-				# only subtract earnings from budget if working...I think???
+			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
+				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 			else
 				payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
-
-
 			end
 
 			A2[q] = payment
@@ -300,24 +305,23 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 
 		inc = Y[q] + A2[q]
 		h = 30*L[q]
-		if age<=17*4
-			pc = M.pc[age]*(1-M.τ[s,tr])
-			ϵ = M.ϵ[age]
+		if age<=18*4
+			pc = M.pc[Age_Year]*(1-M.τ[s,tr])
+			ϵ = M.ϵ[Age_Year]
 			Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
-			θ[q+1] = M.δI[age]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)* M.δI[age]*log(112-h + h*pc^(1-ϵ)) + M.δθ[age]*θ[q]
+			θ[q+1] = M.δI[Age_Year]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)* M.δI[Age_Year]*log(112-h + h*pc^(1-ϵ)) + M.δθ[Age_Year]*θ[q]
 		else
 			θ[q+1] = θ[q]
-
 		end
 
 
 
 		age += 1
 		if M.TL[s,tr]
-			A[q] = (age<=17*4)*(A2[q]>0)*(wu<M.TLmax[s,tr]+1)
+			A[q] = (age<=18*4)*(A2[q]>0)*(wu<M.TLmax[s,tr]+1)
 			wu = min(wu+welf,M.TLmax[s,tr]+1) # I think this should be min not max?
 		else
-			A[q] = (age<=17*4)*(A2[q]>0)
+			A[q] = (age<=18*4)*(A2[q]>0)
 		end
 
 	end
@@ -361,7 +365,7 @@ end
 
 
 
-
+Mod2.αWR
 
 
 
@@ -389,9 +393,10 @@ mean(S1_c[3])
 mean(S2_c[3])
 mean(S3_c[3])
 
-@time S1_t=Simulate(Mod2,100,30,1,3)
-@time S2_t=Simulate(Mod2,100,30,2,3)
-@time S3_t=Simulate(Mod2,100,30,3,3)
+@time S1_t=Simulate(Mod2,10000,30,1,3)
+@time S2_t=Simulate(Mod2,10000,30,2,3)
+@time S3_t=Simulate(Mod2,10000,30,3,3)
+@time S3_t2=Simulate(Mod2,10000,30,3,2)
 
 budget1[3,3,1,3,25,2,2,2]
 Earnings[3,25]
@@ -399,7 +404,7 @@ Earnings[3,25]
 mean(S1_t[2])
 mean(S2_t[2])
 mean(S3_t[2])
-
+mean(S3_t2[2])
 
 Mod2.welf_prob[1,1,:,:,:,:]
 
