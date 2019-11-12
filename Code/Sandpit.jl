@@ -11,6 +11,8 @@ TimeLimit_Ind=[false true true; false true true; false false false]
 
 TimeLimits=[0 7 7; 0 8 8; 0 0 0]
 
+Work_Reqs_Ind=[false true true; false true true; false false true];
+
 τ=ones(3,3).*0.5
 
 @time Mod1=initialize_model()
