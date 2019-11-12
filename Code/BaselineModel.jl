@@ -5,19 +5,9 @@ using Profile
 using CSV
 using GLM
 using DataFrames
-cd("/Users/FilipB/github/welfare-meta-study/Code")
-include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
+#cd("/Users/FilipB/github/welfare-meta-study/Code")
+#include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
 
-budget1
-findmax(budget1[:,3,:,:,:,:,:,:])
-
-Budget_Ageout
-Earnings
-TimeLimit_Ind
-TimeLimits
-τ=ones(3,3).*0.5
-findmax(TimeLimits)[1]
-1+1
 # what structure here? Maybe make so we can simulate across sites??
 
 # NS - number of sites
