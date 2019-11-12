@@ -5,20 +5,8 @@ using Profile
 using CSV
 using GLM
 using DataFrames
-cd("/Users/FilipB/github/welfare-meta-study/Code")
-include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
-
-budget1
-findmax(budget1[:,3,:,:,:,:,:,:])
-
-Budget_Ageout
-Earnings
-TimeLimit_Ind
-TimeLimits
-τ=ones(3,3).*0.5
-findmax(TimeLimits)[1]
-Work_Reqs_Ind.*0.5
-1+1
+#cd("/Users/FilipB/github/welfare-meta-study/Code")
+#include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
 
 # what structure here? Maybe make so we can simulate across sites??
 
@@ -363,7 +351,7 @@ function Simulate(M::Model,R,Q,s,tr)
 		nk2=findmax(nk)[2]
 		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r] = Simulate(M,Q,s,tr,nk2,age0)
 		for i in 1:Q
-		AGE[i,r] = age0 + floor((i-1)/4) # ages start at 0, had issue with 0-indexinf
+			AGE[i,r] = age0 + floor((i-1)/4) # ages start at 0, had issue with 0-indexinf
 		end
 	end
 	return AGE,A,A2,Y,L,θ,Xc
