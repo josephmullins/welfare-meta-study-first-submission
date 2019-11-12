@@ -2,9 +2,9 @@ include("BaselineModel.jl")
 using DelimitedFiles
 
 
-earnings = reshape(readdlm("earnings"),3,72)
-budget = reshape(readdlm("budget"),3,3,3,17,17*4,2,2,2)
-budget_ageout = reshape(readdlm("budget_ageout"),3,72,2,2)
+Earnings = reshape(readdlm("earnings"),3,72)
+budget = reshape(readdlm("budget"),3,3,3,18,18*4,2,2,2)
+Budget_Ageout = reshape(readdlm("budget_ageout"),3,73,2,2)
 #findmax(budget1[:,3,:,:,:,:,:,:])
 
 TimeLimit_Ind=[false true true; false true true; false false false]

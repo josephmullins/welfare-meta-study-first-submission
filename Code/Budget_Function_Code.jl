@@ -149,10 +149,12 @@ for i in 1:3
         BS3.YearString=string.(BS3.variable)
         BS3.Year=parse.(Int64, BS3.YearString)
         BS3=BS3[BS3[:, :Year] .>= 1994, :] # fix this for CT later on!!!
+        if i!=1
         for k in 1:17
             for z in 1:4
                 Benefit[i,j,(4*k+z-4)]=BS3.value[k] # I assume this was quarterly?
             end
+        end
         else # this is ugly but I need to feed in something else for CT
             BS3=BS3[BS3[:, :Year] .>= 1996, :]
                 for k in 1:(Dev_Years-2) # snip off the last 2 years
