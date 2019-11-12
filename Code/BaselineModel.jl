@@ -53,10 +53,6 @@ mutable struct Model
 	work_prob::Array{Float64,7} # (site,arm,NumChild,age0,quarter,welfare_choice) (NS x NT x 3 x 18 x Q x 2)
 
 end
-j=ones(6,6)*0.5
-
-
-
 
 
 function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs; πk=ones(3,3).*0.33,πK=ones(3,3).*0.33)
@@ -234,7 +230,6 @@ function initialize_model()
 	return Mod1
 end
 
-@time Mod1=initialize_model()
 
 
 
@@ -255,12 +250,6 @@ function UpdateSpecificParams!(M::Model;
 	M.wq=M.wq
 
 end
-Mod1.αc
-UpdateSpecificParams!(Mod1; αc=0.3)
-Mod1.αc
-UpdateSpecificParams!(Mod1)
-Mod1.αc
-1+1
 
 
 # initial variables: age of youngest, # of kids, wage
@@ -356,81 +345,3 @@ function Simulate(M::Model,R,Q,s,tr)
 	end
 	return AGE,A,A2,Y,L,θ,Xc
 end
-
-
-
-
-
-@time Mod2=initialize_model()
-
-
-
-Mod2.αWR
-
-
-
-
-#=
-
-
-Below are a few sanity checks
-
-=#
-
-
-
-@time S1_c=Simulate(Mod2,10000,30,1,1)
-@time S2_c=Simulate(Mod2,10000,30,2,1)
-@time S3_c=Simulate(Mod2,10000,30,3,1)
-
-
-mean(S1_c[2])
-mean(S2_c[2])
-mean(S3_c[2])
-
-
-mean(S1_c[3])
-mean(S2_c[3])
-mean(S3_c[3])
-
-@time S1_t=Simulate(Mod2,10000,30,1,3)
-@time S2_t=Simulate(Mod2,10000,30,2,3)
-@time S3_t=Simulate(Mod2,10000,30,3,3)
-@time S3_t2=Simulate(Mod2,10000,30,3,2)
-
-budget1[3,3,1,3,25,2,2,2]
-Earnings[3,25]
-
-mean(S1_t[2])
-mean(S2_t[2])
-mean(S3_t[2])
-mean(S3_t2[2])
-
-Mod2.welf_prob[1,1,:,:,:,:]
-
-Mod2.welf_prob[1,2,:,:,:,:]
-
-mean(S1_t[3])
-mean(S2_t[3])
-mean(S3_t[3])
-
-mean(S1_c[4])
-mean(S1_t[4])
-
-mean(S1_c[5])
-mean(S1_t[5])
-
-mean(S1_c[6])
-mean(S1_t[6])
-
-mean(S1_c[7])
-mean(S1_t[7])
-findmax(budget1[:,3,:,:,:,:,:,:])
-
-UpdateSpecificParams!(Mod2; pc=ones(length(Mod2.pc))*0.1,ϵ=ones(length(Mod2.ϵ))*0.1)
-
-@time S1_t=Simulate(Mod2,100,30,1,3)
-
-mean(S1_t[6])
-
-S1_t[6]
