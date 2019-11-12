@@ -56,8 +56,6 @@ for i in 1:3
     end
 end
 
-Earnings=Earnings.*3 # every period is a quarter!
-
 #=
 
 SNAP payouts next
@@ -80,8 +78,6 @@ for i in 1:3
             end
     end
 end
-SNAP=SNAP.*3
-SNAPRules
 
 
 # need to consider parents whose kids aged out
@@ -97,9 +93,6 @@ for i in 1:3
             end
 
 end
-SNAP0=SNAP0.*3
-
-
 
 
 #=
@@ -116,7 +109,7 @@ for j in 1:3
     for i in 1:3
         for k in 1:17
             for z in 1:4
-            Poverty[i,j,(4*k+z-4)]=PovGuideline2[k,(i+1)]./4 # quarterly!!
+            Poverty[i,j,(4*k+z-4)]=PovGuideline2[k,(i+2)]./12 # the index of this spreadsheet is family size, so 2=1+1kid
             end
         end
     end
@@ -155,7 +148,7 @@ for i in 1:3
         BS3=BS3[BS3[:, :Year] .>= 1994, :] # fix this for CT later on!!!
         for k in 1:17
             for z in 1:4
-            Benefit[i,j,(4*k+z-4)]=BS3.value[k] # I assume this was quarterly?
+                Benefit[i,j,(4*k+z-4)]=BS3.value[k] # I assume this was quarterly?
             end
         end
     end
@@ -242,6 +235,10 @@ Budget_Ageout=zeros(3,72,2,2)
 end
 #Budget_Ageout
 #Budget_Ageout=Budget_Ageout.+0.000001
+
+budget1 *= 3
+Budget_Ageout *= 3
+Earnings *= 3
 
 writedlm("budget",budget1)
 writedlm("budget_ageout",Budget_Ageout)
