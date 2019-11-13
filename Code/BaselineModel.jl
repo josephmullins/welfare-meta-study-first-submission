@@ -28,6 +28,7 @@ mutable struct Model
 	# prices
 	pc::Array{Float64,1} #<- one per age of child (relative price)
 	earnings::Array{Float64,2} #<- number of sites x number of quarters
+	SNAP::Array{Float64,8}
 	wq::Float64 #<- one for now, may need more!
 
 	# policies (maybe don't need to store these all here? Only matter for budget))
@@ -55,10 +56,10 @@ mutable struct Model
 end
 
 
-function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs; πk=ones(3,3).*0.33,πK=ones(3,3).*0.33)
+function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt; πk=ones(N_sites,N_arms).*0.33,πK=ones(N_sites,N_arms).*0.33)
 	αc=0.5
 	αθ=0.5
-	αH=ones(3)*0.5 #<- one per site
+	αH=ones(N_sites)*0.5 #<- one per site
 	αA=ones(N_sites)*0.5#<- one per site
 	β=0.95 # seems like an ok guess
 
@@ -95,7 +96,7 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
 
-	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,wq,αWR_p,αWR,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
 end
 
 
@@ -114,7 +115,7 @@ end
 function CalculateUtilities!(M)
 	# first get recursive coefficient
 	Q = 18*4+1
-	for s=1:3,tr=1:3,nk=1:3,age0=1:18,q=1:Q
+	for s=1:length(M.αH),tr=1:3,nk=1:3,age0=1:18,q=1:Q
 		age = age0*4+q
 		if age<Q
 			Age_Year=convert(Int,ceil(q/4))
@@ -159,7 +160,7 @@ end
 
 # this function takes utility calculations and calculates work choice probabilities, as well as expected utilities for program participation choices
 function SolveWorkProb!(M::Model)
-	for s=1:3,tr=1:3,nk=1:3,age0=1:18,q=1:(length(M.δI)+1)
+	for s=1:4,tr=1:3,nk=1:3,age0=1:18,q=1:(length(M.δI)+1)
 		qT = (18-age0)*4
 		if M.TL[s,tr] & (q<=qT)
 			for wu = 1:M.TLmax[s,tr]+1
@@ -214,11 +215,11 @@ end
 
 
 function initialize_model()
-	Mod1=Model(3,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind)
+	Mod1=Model(4,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind,Foodstamps_receipt)
 	GetRecursiveCoefficient!(Mod1)
 	CalculateUtilities!(Mod1)
 	SolveWorkProb!(Mod1)
-	for s in 1:3
+	for s in 1:4
 		for tr in 1:3
 			for nk in 1:3
 				for age0 in 1:18
@@ -265,6 +266,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	L = zeros(Q) #<- work
 	θ = zeros(Q+1)
 	Xc = zeros(Q)
+	Foodstamps=zeros(Q)
 	age = age0*4 #<- convert age to quarterly number
 	if age==0
 		age=1 # I don't want to worry about 1-indexing
@@ -282,11 +284,19 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		if welf
 			payment=0
 			if age<=18*4 && Elig==1
-				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
+									M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
-				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
+									M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 			else
+				if site==1 || site==2 # count this as snap for MN, earnings otherwise
 				payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				else
+				Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				end
 			end
 
 			A2[q] = payment
@@ -314,7 +324,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		end
 
 	end
-	return A,A2,Y,L,θ,Xc
+	return A,A2,Y,L,θ,Xc, Foodstamps
 end
 
 # simulate R panels of length Q for a site x treatment combination
@@ -328,6 +338,7 @@ function Simulate(M::Model,R,Q,s,tr)
 	L = zeros(Q,R) #<- work
 	θ = zeros(Q+1,R)
 	Xc = zeros(Q,R)
+	Foodstamps=zeros(Q,R)
 	AGE = zeros(Q,R) #<- convert age to quarterly number
 	age_dist = Multinomial(1,M.πk[s,:])
 	age_cats = [0:2,3:5,6:16]
@@ -338,10 +349,11 @@ function Simulate(M::Model,R,Q,s,tr)
 		age0 = rand(age_cats[ac2])
 		nk = rand(nk_dist)
 		nk2=findmax(nk)[2]
-		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r] = Simulate(M,Q,s,tr,nk2,age0)
+		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r],Foodstamps[:,R] = Simulate(M,Q,s,tr,nk2,age0)
 		for i in 1:Q
 			AGE[i,r] = age0 + floor((i-1)/4) # ages start at 0, had issue with 0-indexinf
 		end
 	end
-	return AGE,A,A2,Y,L,θ,Xc
+	return (AGE=AGE,Participation=A,Benefit_Receipt=A2,
+	Earned_Income=Y,LFP=L,Skills=θ,Childcare=Xc,Foodstamps=Foodstamps)
 end
