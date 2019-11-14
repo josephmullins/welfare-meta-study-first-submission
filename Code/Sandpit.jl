@@ -1,5 +1,5 @@
 using Revise
-includet("BaselineModel.jl")
+include("BaselineModel.jl")
 using DelimitedFiles
 
 

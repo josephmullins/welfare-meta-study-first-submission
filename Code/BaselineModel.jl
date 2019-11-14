@@ -98,7 +98,7 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
 
-	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,wor_reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,Work_Reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
 end
 
 
@@ -273,7 +273,7 @@ end
 # parameters needed:
 # - δI,δθ,wq,pc*τ,ϵ
 
-# if we want the government's expenditure, it's Xc*τ?
+# if we want the government's expenditure, it's Xc*τ/(1-τ)
 function Simulate(M::Model,Q,s,tr,nk,age0)
 	A = zeros(Q) #<- participation
 	A2 = zeros(Q) #<- receipt
@@ -307,10 +307,10 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 									M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 			else
-				if site==1 || site==2 # count this as snap for MN, earnings otherwise
-				payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				if s==1 || s==2 # count this as snap for MN, earnings otherwise
+					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 				else
-				Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+					Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 				end
 			end
 
@@ -371,4 +371,56 @@ function Simulate(M::Model,R,Q,s,tr)
 	end
 	return (AGE=AGE,Participation=A,Benefit_Receipt=A2,
 	Earned_Income=Y,LFP=L,Skills=θ,Childcare=Xc,Foodstamps=Foodstamps)
+end
+
+function MomentsBaseline(M::Model,simsize,lengths,TE_index)
+	# forget about making general for now
+
+	# -- set up some primitives
+	sample_size = [4803,1405+1410,3208,6009]
+	simsize = 5*sample_size
+	N1 = 2*(lengths[1] + lengths[2]) + 3*(lengths[3] + lengths[4])
+	E = zeros(N1)
+	A = zeros(N1)
+	A2 = zeros(N1)
+	n_arms = [2,2,3,3]
+	years_childcare = [3,3,4,4]
+	year_meas = [3,4,3,3]
+	θ = -1*ones(4,3,maximum(simsize))
+	AGE = -1*ones(4,3,maximum(simsize))
+	XG = zeros(4,2)
+	mfip_wght = 0.5
+	# --- Run the simulation ----- #
+
+	curr_pos = 0
+	for i=1:4
+		for j=1:n_arms[i]
+			dat = Simulate(M,simsize[i],lengths[i],i,j)
+			curr_slice = (curr_pos+1):(curr_pos+lengths[i])
+			E[curr_slice] = mean(dat.LFP,dims=2)
+			A[curr_slice] = mean(dat.Participation,dims=2)
+			A2[curr_slice] = mean(dat.Benefit_Receipt,dims=2)
+			θ[i,j,1:simsize[i]] = dat.Skills[year_meas[i]*4,:]
+			AGE[i,j,1:simsize[i]] = dat.AGE[year_meas[i]*4,:]
+			if j<=2
+				τ = Mod1.τ[i,j]
+				XG[i,j] = τ/(1-τ)*mean(dat.Childcare[1:years_childcare[i]*4,:])*4 #<- annual
+			end
+			curr_pos += lengths[i]
+		end
+	end
+	# --- Child Care Moments ------ #
+	XG_moms = [(XG[i,2]-XG[i,1])/XG[i,1] for i=1:3]
+	XG_mom2 = XG[3,1]/XG[1,1]
+
+	# --- Skill Outcome Moments ------ #
+	# assume TE_index stores: site,treatment,agemin,agemax
+	skill_moms = zeros(size(TE_index)[1])
+	for m=1:size(TE_index)[1]
+		s,a,amin,amax = TE_index[m,:]
+		slice_control = (AGE[s,1,:].>=amin) .& (AGE[s,1,:].<=amax)
+		slice_treat = (AGE[s,1+a,:].>=amin) .& (AGE[s,1+a,:].<=amax)
+		skill_moms[m] = mean(θ[s,1+a,slice_treat]) - mean(θ[s,1,slice_control])
+	end
+	return E,A,A2,[XG_moms;XG_mom2],skill_moms
 end

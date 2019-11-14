@@ -34,9 +34,12 @@ D <- read.csv("../Data/ChildOutcomes.csv")
 d0 <- D[D$Treatment=="C",]
 d1 <- D[D$Treatment!="C",]
 d0 <- d0 %>% melt(c("Site","Treatment","YearOfMeasurement","Age.at.Measurement"))
-d0 <- rename_(d0,value0 = "value")
-d1 <- d1 %>% melt(c("Site","Treatment","YearOfMeasurement","Age.at.Measurement")) %>%
-  select(-"Treatment")
+d0 <- rename_(d0,value0 = "value") %>% select(-"Treatment")
+d1 <- d1 %>% melt(c("Site","Treatment","YearOfMeasurement","Age.at.Measurement"))
 d2 <- merge(d0,d1)
 
 d2$TE <- d2$value - d2$value0
+cols = c("Site","YearOfMeasurement","Age.at.Measurement","Treatment")
+d2 <- select(d2,-c("value0","value"))
+
+
