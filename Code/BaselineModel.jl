@@ -34,6 +34,7 @@ mutable struct Model
 	# policies (maybe don't need to store these all here? Only matter for budget))
 	αWR_p::Float64 #<- cost imposed by work requirement
 	αWR::Array{Float64,2} # only some arms have work reqs
+	work_reqs::Array{Float64,2}
 	TL::Array{Bool,2} #<- time limit indicator, NS x NT
 	TLmax::Array{Int64,2} #<- length of time limit NS x NT
 
@@ -76,6 +77,7 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	# policies (maybe don't need to store these all here? Only matter for budget))
 	αWR_p=10.0#<- cost imposed by work requirement
 	αWR=Work_Reqs.*αWR_p
+	work_reqs=Work_Reqs
 	TL=TimeLimit_Ind #<- time limit indicator, NS x NT
 	TLmax=TimeLimits #<- length of time limit NS x NT
 		htl=findmax(TLmax)[1]+1
@@ -96,7 +98,7 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
 
-	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,wor_reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
 end
 
 
@@ -231,7 +233,20 @@ function initialize_model()
 	return Mod1
 end
 
-
+function SolveModel!(Mod1::Model)
+	GetRecursiveCoefficient!(Mod1)
+	CalculateUtilities!(Mod1)
+	SolveWorkProb!(Mod1)
+	for s in 1:4
+		for tr in 1:3
+			for nk in 1:3
+				for age0 in 1:18
+					SolveModel!(Mod1,s,tr,nk,age0)
+				end
+			end
+		end
+	end
+end
 
 
 function UpdateSpecificParams!(M::Model;
