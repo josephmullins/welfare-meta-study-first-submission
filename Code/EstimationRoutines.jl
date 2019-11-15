@@ -35,8 +35,8 @@ end
 function UpdateModel!(M::Model, Pars::Parameters)
 
 	M.αc=Pars.αc
-	M.αθ.=Pars.αθ
-	M.αH.=Pars.αH
+	M.αθ=Pars.αθ
+	M.αH=Pars.αH
 	M.β=Pars.β
 	for i in 1:length(M.δI)
 		M.δI[i]=exp(Pars.δI[1]+i*Pars.δI[2])
@@ -102,9 +102,10 @@ function Criterion(x::Array{Float64,1},
 	UpdatePars!(x,Pars,vars)
 	UpdateModel!(M, Pars)
 	SolveModel!(M)
-	E,A,A2,XG,skill = BaselineMoments(M,R,lengths,TE_index)
+	E,A,A2,XG,skill = MomentsBaseline(M,R,lengths,TE_index)
 	mom_sim = [E;A;A2;XG;skill]
 	Q = sum(wghts.* (mom_sim .- moms).^2)
+	println(Q)
 	return Q
 end
 
@@ -130,7 +131,6 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	maxevals=1000,
 	tightness=1e-3)
 
-	M=initialize_model()
 	UpdateModel!(M, Pars)
 	SolveModel!(M)
 	np = 0;
@@ -178,8 +178,8 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	lower_bounds!(opt,lb)
 	upper_bounds!(opt,ub)
 		# below it was (x,g) in Jo's old code
-		# don't know what the g was for--test this and see if it breaks
-	min_objective!(opt,(x)->Criterion(x,Pars,M,moms, vars))
+		# don't know what the g was for--test this and see if it breaks (yes it breaks)
+	min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index))
 	maxeval!(opt,maxevals)
 
 	return opt,x0
