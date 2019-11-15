@@ -57,7 +57,7 @@ mutable struct Model
 end
 
 
-function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt; πk=ones(N_sites,N_arms).*0.33,πK=ones(N_sites,N_arms).*0.33)
+function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt; πk=ones(N_sites,N_arms).*(1/3),πK=ones(N_sites,N_arms).*(1/3))
 	αc=0.5
 	αθ=0.5
 	αH=ones(N_sites)*0.5 #<- one per site
@@ -237,8 +237,9 @@ function SolveModel!(Mod1::Model)
 	GetRecursiveCoefficient!(Mod1)
 	CalculateUtilities!(Mod1)
 	SolveWorkProb!(Mod1)
+	n_arms = [2,2,3,3]
 	for s in 1:4
-		for tr in 1:3
+		for tr in 1:n_arms[s]
 			for nk in 1:3
 				for age0 in 1:18
 					SolveModel!(Mod1,s,tr,nk,age0)
@@ -373,23 +374,22 @@ function Simulate(M::Model,R,Q,s,tr)
 	Earned_Income=Y,LFP=L,Skills=θ,Childcare=Xc,Foodstamps=Foodstamps)
 end
 
-function MomentsBaseline(M::Model,simsize,lengths,TE_index)
+function MomentsBaseline(M::Model,R,lengths,TE_index)
 	# forget about making general for now
 
 	# -- set up some primitives
 	sample_size = [4803,1405+1410,3208,6009]
-	simsize = 5*sample_size
+	simsize = R*sample_size
 	N1 = 2*(lengths[1] + lengths[2]) + 3*(lengths[3] + lengths[4])
 	E = zeros(N1)
 	A = zeros(N1)
 	A2 = zeros(N1)
 	n_arms = [2,2,3,3]
-	years_childcare = [3,3,4,4]
+	years_childcare = [3,3,3,3]
 	year_meas = [3,4,3,3]
 	θ = -1*ones(4,3,maximum(simsize))
 	AGE = -1*ones(4,3,maximum(simsize))
 	XG = zeros(4,2)
-	mfip_wght = 0.5
 	# --- Run the simulation ----- #
 
 	curr_pos = 0

@@ -1,10 +1,10 @@
 # goal: get nsims, model, set of pars; feed into function that generates moment fit
-
+using NLopt
 
 mutable struct Parameters
-	np::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αl, :αθ, :k0, :ρa,:σ_k),NTuple{16,Int64}}
-	lb::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αl, :αθ, :k0, :ρa,:σ_k),Tuple{Float64, Float64, Array{Float64,1}, Array{Float64,1}, Float64, Array{Float64,1},Float64,Float64,Array{Float64,1},Array{Float64,1},Float64,Float64 }}
-	ub::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αl, :αθ, :k0, :ρa,:σ_k),Tuple{Float64, Float64, Array{Float64,1}, Array{Float64,1}, Float64, Array{Float64,1},Float64,Float64,Array{Float64,1},Array{Float64,1},Float64,Float64 }}
+	np::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR),NTuple{12,Int64}}
+	lb::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR),Tuple{Float64, Float64, Array{Float64,1}, Array{Float64,1}, Float64, Array{Float64,1},Float64,Float64,Array{Float64,1},Array{Float64,1},Float64,Float64 }}
+	ub::NamedTuple{(:αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR),Tuple{Float64, Float64, Array{Float64,1}, Array{Float64,1}, Float64, Array{Float64,1},Float64,Float64,Array{Float64,1},Array{Float64,1},Float64,Float64 }}
 
 
     # preferences
@@ -44,7 +44,7 @@ function UpdateModel!(M::Model, Pars::Parameters)
 		M.ϵ[i]=Pars.ϵ
 	end
 	for i in 3:4
-	M.τ[i,1]=Pars.τ[1]
+		M.τ[i,1]=Pars.τ[1]
 		for j in 2:3
 			M.τ[i,j]=Pars.τ[2]
 		end
@@ -79,32 +79,32 @@ end
 
 
 
-
-function CheckFit!(moms::Dataframe,M::Model; Nsims=10000)
-		SolveModel!(M)
-		mom_sim=Get_Simulated_Moments(M,DF)
-		moms[:mom_sim] = mom_sim
-		moms[:Q] = moms[:wght].*(moms[:mom] - moms[:mom_sim]).^2
-end
-
-function CheckFit!(Pars::Parameters, M::Model, moms::DataFrame)
-	UpdateModel!(M, Pars)
-	SolveModel!(M)
-	CheckFit!(moms,M Nsims=10000)
-end
+# this function assumed a dataframe. This will still be useful but let's work on it later.
+# function CheckFit!(M::Model,moms,wghts,R,lengths,TE_index)
+# 		SolveModel!(M)
+# 		mom_sim=BaselineMoments(M,R,lengths,TE_index)
+# 		moms[:mom_sim] = mom_sim
+# 		moms[:Q] = moms[:wght].*(moms[:mom] - moms[:mom_sim]).^2
+# end
+#
+# function CheckFit!(Pars::Parameters, M::Model, moms::DataFrame)
+# 	UpdateModel!(M, Pars)
+# 	SolveModel!(M)
+# 	CheckFit!(moms,M Nsims=10000)
+# end
 
 
 function Criterion(x::Array{Float64,1},
 		Pars::Parameters,
 		M::Model,
-		moms::DataFrame,
-		vars::Array{Symbol,1})
+		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index)
 
 	UpdatePars!(x,Pars,vars)
 	UpdateModel!(M, Pars)
 	SolveModel!(M)
-	CheckFit!(moms::Dataframe,M::Model; Nsims=10000)
-	Q=sum(moms.Q)
+	E,A,A2,XG,skill = BaselineMoments(M,R,lengths,TE_index)
+	mom_sim = [E;A;A2;XG;skill]
+	Q = sum(wghts.* (mom_sim .- moms).^2)
 	return Q
 end
 
@@ -124,7 +124,7 @@ function Criterion!(x,g,Pars,M,moms,vars)
 
 end
 
-function GetOptimization(Pars::Parameters, vars,moms::DataFrame;
+function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_index;
 	Global=0,
 	SBPLX=0,
 	maxevals=1000,
@@ -181,8 +181,6 @@ function GetOptimization(Pars::Parameters, vars,moms::DataFrame;
 		# don't know what the g was for--test this and see if it breaks
 	min_objective!(opt,(x)->Criterion(x,Pars,M,moms, vars))
 	maxeval!(opt,maxevals)
-
-	end
 
 	return opt,x0
 

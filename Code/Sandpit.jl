@@ -17,7 +17,7 @@ Work_Reqs_Ind=[false true true; false true true; false false true;false false tr
 
 τ=ones(4,3).*0.5
 
-@time Mod1=initialize_model()
+Mod1=initialize_model()
 
 Mod1.αc
 UpdateSpecificParams!(Mod1; αc=0.3)
