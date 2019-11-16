@@ -185,3 +185,20 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	return opt,x0
 
 end
+
+function Fit(M)
+	SolveModel!(M)
+	E,A,A2,XG,th = MomentsBaseline(M,5,lengths,TE_index)
+	subplot(2,2,1)
+	plot(E[1:16])
+	plot(E_mom[1:16])
+	subplot(2,2,2)
+	plot(E[17:32])
+	plot(E_mom[17:32])
+	subplot(2,2,3)
+	plot(A[1:16])
+	plot(A_mom[1:16])
+	subplot(2,2,4)
+	plot(A[17:32])
+	plot(A_mom[17:32])
+end

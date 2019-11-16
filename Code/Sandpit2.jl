@@ -15,8 +15,8 @@ TE_index = convert(Array{Int64,2},TE_moms[:,[:Site,:Treatment,:AgeMin,:AgeMax]])
 TE_moms0 = convert(Array{Float64,1},TE_moms.FacScore)
 
 Q_moms = CSV.read("../Data/QuarterlyMoms.csv")
-E_mom = convert(Array{Float64,1},Q_moms.LFP)
-A_mom = convert(Array{Float64,1},Q_moms.Participation)
+E_mom = convert(Array{Float64,1},Q_moms.LFP)/100
+A_mom = convert(Array{Float64,1},Q_moms.Participation)/100
 A2_mom = convert(Array{Float64,1},Q_moms.Receipt)
 
 τ = 0.1*ones(4,3)
@@ -43,24 +43,36 @@ wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); ones(
 
 # set up the parameter object
 # :αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR)
-αc = 1.
-αθ = 1.
-αH = ones(4)
-αA = ones(4)
+αc = 0.1
+αθ = 0.1
+αH = 0.1*ones(4)
+αA = 0.1*ones(4)
 β = 0.98
-δI = [-1.,0.]
+δI = [-10.,0.]
 δθ = 0.9
 ϵ = 0.9
 τ = [0.1,0.1]
 pc = [0.,0.]
 wq = 3. *12
-αWR = 1.
+αWR = 0.1
 np = (αc = 1, αθ = 1, αH = 4, αA = 4, β = 1, δI = 2, δθ = 1, ϵ = 1, τ = 2, pc = 2, wq = 1, αWR = 1)
 lb = (αc = 0, αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0, δI = [-5,-5],δθ = 0, ϵ = 0,τ = zeros(2),pc = -5*ones(2),wq = 0.1, αWR = 0)
 ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = 5*ones(2),δθ = 1.5, ϵ = Inf,τ = 0.99*ones(2),pc = 5*ones(2),wq = Inf,αWR = Inf)
 
 pars = Parameters(np,lb,ub,αc,αθ,αH,αA,β,δI,δθ,ϵ,τ,pc,wq,αWR)
 
+labor_block = [:αc,:αH,:αA,:β]
+labor_block2 = [:αH,:αA,:β] #<- ok, I wonder if there's a better way to do this,
+wghts_alt = copy(wghts)
+wghts_alt[3*N1+1:end] .= 0
+
+opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
+res1 = optimize(opt1,x0)
+
+opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts_alt,5,lengths,TE_index)
+res2 = optimize(opt2,x0)
+
+break
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
 res = optimize(opt,x0)
