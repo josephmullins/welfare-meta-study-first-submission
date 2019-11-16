@@ -1,7 +1,9 @@
+cd("/Users/FilipB/github/welfare-meta-study/Code")
 using DataFrames
 using PyPlot
-include("BaselineModel.jl")
-include("EstimationRoutines.jl")
+using Revise
+includet("BaselineModel.jl")
+includet("EstimationRoutines.jl")
 using DelimitedFiles
 
 
@@ -44,18 +46,22 @@ wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); ones(
 
 # set up the parameter object
 # :αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR)
-αc = 0.1
-αθ = 0.1
-αH = 0.1*ones(4)
-αA = 0.1*ones(4)
-β = 0.98
-δI = [-10.,0.]
-δθ = 0.9
-ϵ = 0.9
-τ = [0.1,0.1]
-pc = [0.,0.]
-wq = 3. *12
-αWR = 0.1
+
+Param1=[0.1 0.1 0.1 0.1  0.98 -10. 0.0 0.9 0.9 0.1 0.1 0.0 0.0 36.0 0.1]
+#Param1=CSV.read("new_est.csv", header=false")
+
+αc = Param1[1]# 0.1
+αθ = Param1[2]# 0.1
+αH = Param1[3].*ones(4)# 0.1*ones(4)
+αA = Param1[4].*ones(4)# 0.1*ones(4)
+β = Param1[5]# 0.98
+δI = [Param1[6],Param1[7]]# [-10.,0.]
+δθ = Param1[8]# 0.9
+ϵ = Param1[9]# 0.9
+τ = [Param1[10],Param1[11]]# [0.1,0.1]
+pc = [Param1[12],Param1[13]]# [0.,0.]
+wq = Param1[14]# 3. *12
+αWR = Param1[15]# 0.1
 np = (αc = 1, αθ = 1, αH = 4, αA = 4, β = 1, δI = 2, δθ = 1, ϵ = 1, τ = 2, pc = 2, wq = 1, αWR = 1)
 lb = (αc = 0, αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0, δI = [-15,-5],δθ = 0, ϵ = 0,τ = zeros(2),pc = -5*ones(2),wq = 0.1, αWR = 0)
 ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = 5*ones(2),δθ = 1.5, ϵ = Inf,τ = 0.99*ones(2),pc = 5*ones(2),wq = Inf,αWR = Inf)
@@ -77,19 +83,29 @@ UpdateModel!(Mod1, pars)
 SolveModel!(Mod1)
 Fit(Mod1)
 Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
 
 
 
 
-opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index; SBPLX=1, maxevals=100)
+opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index; maxevals=100)
 res1 = optimize(opt1,x0)
+Criterion(x0,pars,Mod1,labor_block,moms0,wghts,5,lengths,TE_index)
+
 
 opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts_alt,5,lengths,TE_index)
 res2 = optimize(opt2,x0)
 
 break
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index; SBPLX=1, maxevals=100)
+opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index; SBPLX=1)
 res = optimize(opt,x0)
 
+
+writedlm("new_est.csv",x0)
+
 #E,A,A2,XG,skill_moms = MomentsBaseline(Mod1,5,lengths,TE_index)
+
+
+
+# Code to extract moment list

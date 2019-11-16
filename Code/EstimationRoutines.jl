@@ -98,7 +98,7 @@ end
 function Criterion(x::Array{Float64,1},
 		Pars::Parameters,
 		M::Model,
-		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index)
+		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index; moments=0)
 
 	UpdatePars!(x,Pars,vars)
 	UpdateModel!(M, Pars)
@@ -107,7 +107,11 @@ function Criterion(x::Array{Float64,1},
 	mom_sim = [E;A;A2;XG;skill]
 	Q = sum(wghts.* (mom_sim .- moms).^2)
 	println(Q)
-	return Q
+	if moments==1
+		return mom_sim
+	else
+		return Q
+	end
 end
 
 
