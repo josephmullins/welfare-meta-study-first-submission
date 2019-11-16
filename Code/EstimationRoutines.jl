@@ -98,11 +98,13 @@ end
 function Criterion(x::Array{Float64,1},
 		Pars::Parameters,
 		M::Model,
-		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index)
+		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index;solve = true)
 
 	UpdatePars!(x,Pars,vars)
 	UpdateModel!(M, Pars)
-	SolveModel!(M)
+	if solve
+		SolveModel!(M)
+	end
 	Random.seed!(151119)
 	E,A,A2,XG,skill = MomentsBaseline(M,R,lengths,TE_index)
 	mom_sim = [E;A;A2;XG;skill]
@@ -131,7 +133,8 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	Global=0,
 	SBPLX=0,
 	maxevals=1000,
-	tightness=1e-3)
+	tightness=1e-3,
+	no_solve = false)
 
 	UpdateModel!(M, Pars)
 	SolveModel!(M)
@@ -181,11 +184,14 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	upper_bounds!(opt,ub)
 		# below it was (x,g) in Jo's old code
 		# don't know what the g was for--test this and see if it breaks (yes it breaks)
-	min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index))
+	if no_solve
+		min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index,solve=false))
+	else
+		min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index))
+	end
 	maxeval!(opt,maxevals)
 
 	return opt,x0
-
 end
 
 function Fit(M)
