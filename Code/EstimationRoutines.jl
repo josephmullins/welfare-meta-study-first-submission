@@ -37,6 +37,7 @@ function UpdateModel!(M::Model, Pars::Parameters)
 	M.αc=Pars.αc
 	M.αθ=Pars.αθ
 	M.αH=Pars.αH
+	M.αA = Pars.αA
 	M.β=Pars.β
 	for i in 1:length(M.δI)
 		M.δI[i]=exp(Pars.δI[1]+i*Pars.δI[2])

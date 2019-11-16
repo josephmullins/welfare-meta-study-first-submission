@@ -1,4 +1,5 @@
 using DataFrames
+using PyPlot
 include("BaselineModel.jl")
 include("EstimationRoutines.jl")
 using DelimitedFiles
@@ -64,7 +65,7 @@ pars = Parameters(np,lb,ub,αc,αθ,αH,αA,β,δI,δθ,ϵ,τ,pc,wq,αWR)
 labor_block = [:αc,:αH,:αA,:β]
 labor_block2 = [:αH,:αA,:β] #<- ok, I wonder if there's a better way to do this,
 wghts_alt = copy(wghts)
-wghts_alt[3*N1+1:end] .= 0
+wghts_alt[2*N1+1:end] .= 0
 
 opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
 res1 = optimize(opt1,x0)
