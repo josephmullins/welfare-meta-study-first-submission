@@ -52,14 +52,14 @@ wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); zeros
 β = 0.98
 δI = [-10.,0.]
 δθ = 0.9
-ϵ = 0.9
-τ = [0.1,0.1]
+ϵ = 1.5
+τ = [0.3,0.3]
 pc = [0.,0.]
 wq = 3. *12
 αWR = 0.1
 np = (αc = 1, αθ = 1, αH = 4, αA = 4, β = 1, δI = 2, δθ = 1, ϵ = 1, τ = 2, pc = 2, wq = 1, αWR = 1)
-lb = (αc = 0, αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0, δI = [-5,-5],δθ = 0, ϵ = 0,τ = zeros(2),pc = -5*ones(2),wq = 0.1, αWR = 0)
-ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = 5*ones(2),δθ = 1.5, ϵ = Inf,τ = 0.99*ones(2),pc = 5*ones(2),wq = Inf,αWR = Inf)
+lb = (αc = 0, αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0.4, δI = [-5,-0.2],δθ = 0, ϵ = 0,τ = zeros(2),pc = [-2,-0.2],wq = 0.1, αWR = 0)
+ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = [1,0.2],δθ = 1.5, ϵ = Inf,τ = 0.99*ones(2),pc = [1,0.2],wq = Inf,αWR = Inf)
 
 pars = Parameters(np,lb,ub,αc,αθ,αH,αA,β,δI,δθ,ϵ,τ,pc,wq,αWR)
 
@@ -68,14 +68,23 @@ labor_block = [:αc,:αH,:αA,:β,:wq,:αWR]
 wghts_alt = copy(wghts)
 wghts_alt[2*N1+1:end] .= 0
 
-opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
+# ----- Find initial guess of preference parameters
+opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index,maxevals=500)
+println(" ------ Round 1 ------")
 res1 = optimize(opt1,x0)
+println(" ------ Round 2 ------")
+res2 = optimize(opt1,res1[2])
+println(" ------ Round 3 ------")
+res3 = optimize(opt1,res2[2])
 
-opt2,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
-res2 = optimize(opt2,x0)
-
-# write to simulate special case?
+# ---- Find initial guess of production parameters
+pars.δI[1] = -2.
+wghts_child = copy(wghts);
+wghts_child[1:3*N1] .= 0
 child_block = [:δI,:δθ,:ϵ,:τ,:pc,:wq] #<- use wq?
+opt2,x0 = GetOptimization(pars,Mod1,child_block,moms0,wghts_child,5,lengths,TE_index,maxevals=500,no_solve=true) #<- just pick production pars to hit treatment effects, nothing else
+res4 = optimize(opt2,x0)
+res5 = optimize(opt2,res4[2])
 
 # see if we can get FTP only
 # wghts_ftp = wghts_alt
