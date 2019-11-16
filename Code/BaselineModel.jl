@@ -350,7 +350,6 @@ function Simulate(M::Model,R,Q,s,tr)
 	# ay_cat = rand(Multinomial(M.πk[s,tr]))
 	# cats = [0:2,3:5,6:16]
 	# age0 =
-	Random.seed!(123)
 	A = zeros(Q,R) #<- participation
 	A2 = zeros(Q,R) #<- receipt
 	Y = zeros(Q,R) #<- earnings
