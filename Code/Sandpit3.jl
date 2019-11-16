@@ -43,7 +43,7 @@ Mod1=initialize_model();
 moms0 = [E_mom;A_mom;A2_mom;XGmom;TE_moms0]
 N1 = length(E_mom)
 N2 = length(TE_moms0)
-wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); ones(N1)/sqrt(abs(mean(A2_mom))); ones(4)/sqrt(abs(mean(XGmom))); ones(N2)/sqrt(abs(mean(TE_moms0)))]
+wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); zeros(N1)/sqrt(abs(mean(A2_mom))); ones(4)/sqrt(abs(mean(XGmom))); ones(N2)/sqrt(abs(mean(TE_moms0)))]
 
 # set up the parameter object
 # :αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR)
@@ -64,9 +64,12 @@ Param1=Param1[:,1]
 pc = [Param1[18],Param1[19]]# [0.,0.]
 wq = Param1[20]# 3. *12
 αWR = Param1[21]# 0.1
+
+Bnds=10000
+
 np = (αc = 1, αθ = 1, αH = 4, αA = 4, β = 1, δI = 2, δθ = 1, ϵ = 1, τ = 2, pc = 2, wq = 1, αWR = 1)
-lb = (αc = 0, αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0, δI = [-15,-5],δθ = 0, ϵ = 0,τ = zeros(2),pc = -5*ones(2),wq = 0.1, αWR = 0)
-ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = 5*ones(2),δθ = 1.5, ϵ = Inf,τ = 0.99*ones(2),pc = 5*ones(2),wq = Inf,αWR = Inf)
+lb = (αc = 0, αθ = 0, αH = -Bnds*ones(4),αA = -Bnds*ones(4),β = 0, δI = [-15,-5],δθ = 0, ϵ = 0,τ = zeros(2),pc = -5*ones(2),wq = 0.1, αWR = 0)
+ub = (αc = Bnds, αθ = Bnds, αH = Bnds*ones(4),αA = Bnds*ones(4),β = 1, δI = 5*ones(2),δθ = 1.5, ϵ = Bnds,τ = 0.99*ones(2),pc = 5*ones(2),wq = Bnds,αWR = Bnds)
 
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 
@@ -80,54 +83,176 @@ labor_block2 = [:αH,:αA,:β] #<- ok, I wonder if there's a better way to do th
 wghts_alt = copy(wghts)
 wghts_alt[2*N1+1:end] .= 0
 
+# test stuff
 
 UpdateModel!(Mod1, pars)
 SolveModel!(Mod1)
 X2=Fit(Mod1)
+
+
+xa=deepcopy(x1)
+momsa=deepcopy(moms0)
+mod_a=deepcopy(Mod1)
+mod_a.V==Mod1.V
 Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
 Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+mod_a.V==Mod1.V
+x1==xa
+moms0==momsa
+
+
+p1=deepcopy([pars.αc, pars.pc, pars.αH, pars.wq, pars.αWR, pars.αθ, pars.ϵ, pars.τ, pars.β, pars.αA, pars.δI, pars.δθ])
+p1==[pars.αc, pars.pc, pars.αH, pars.wq, pars.αWR, pars.αθ, pars.ϵ, pars.τ, pars.β, pars.αA, pars.δI, pars.δθ]
+UpdatePars!(x1,pars,vlist)
+p1==[pars.αc, pars.pc, pars.αH, pars.wq, pars.αWR, pars.αθ, pars.ϵ, pars.τ, pars.β, pars.αA, pars.δI, pars.δθ]
 
 
 
 
-opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index; maxevals=100)
+mod_a=deepcopy(Mod1)
+mod_a.V==Mod1.V
+SolveModel!(Mod1)
+mod_a.V==Mod1.V
+
+
+for s in 1:4
+    for tr in 1:3
+        for nk in 1:3
+            for age0 in 1:18
+                SolveModel!(Mod1,s,tr,nk,age0)
+            end
+        end
+    end
+end
+mod_a=deepcopy(Mod1)
+mod_a.welf_prob==Mod1.welf_prob
+for s in 1:4
+    for tr in 1:3
+        for nk in 1:3
+            for age0 in 1:18
+                SolveModel!(Mod1,s,tr,nk,age0)
+            end
+        end
+    end
+end
+mod_a.welf_prob==Mod1.welf_prob
+
+
+
+
+
+
+
+
+mod_a=deepcopy(Mod1)
+mod_a.utility==Mod1.utility
+CalculateUtilities!(Mod1)
+mod_a.utility==Mod1.utility
+
+
+
+
+
+
+SolveWorkProb!(Mod1)
+mod_a=deepcopy(Mod1)
+mod_a.work_prob==Mod1.work_prob
+SolveWorkProb!(Mod1)
+mod_a.work_prob==Mod1.work_prob
+
+
+
+
+
+
+
+
+
+
+
+GetRecursiveCoefficient!(Mod1)
+mod_a=deepcopy(Mod1)
+mod_a.Γδ==Mod1.Γδ
+GetRecursiveCoefficient!(Mod1)
+mod_a.Γδ==Mod1.Γδ
+
+
+
+
+
+
+
+
+
+mod_a.V.-Mod1.V
+
+x1
+pars2=deepcopy(pars)
+
+Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+x1
+pars3=deepcopy(pars)
+
+
+
+
+
+
+E,A,A2,XG,skill = MomentsBaseline(Mod1,5,lengths,TE_index)
+mom_sim1 = [E;A;A2;XG;skill]
+
+E,A,A2,XG,skill = MomentsBaseline(Mod1,5,lengths,TE_index)
+mom_sim2 = [E;A;A2;XG;skill]
+
+(mom_sim2.-mom_sim1)./mom_sim2
+
+M1[1].-M2[1]
+
+# end test
+
+
+opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts,5,lengths,TE_index; maxevals=100, Global=100)
 res1 = NLopt.optimize(opt1,x0)
 Criterion(x0,pars,Mod1,labor_block,moms0,wghts,5,lengths,TE_index)
 
-
-opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts_alt,5,lengths,TE_index)
+opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts,5,lengths,TE_index)
 res2 = NLopt.optimize(opt2,x0)
 
 break
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index; SBPLX=1)
+opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index; SBPLX=1, maxevals=100)
 res1 = NLopt.optimize(opt,x0)
 x1=res1[2]
+
 
 UpdatePars!(x1,pars,vlist)
 UpdateModel!(Mod1, pars)
 Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
-MomentsBaseline(Mod1,5,lengths,TE_index)
-
-writedlm("new_est.csv",x0)
-
-moms2=Criterion(x0,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index; moments=1)
+E,A,A2,XG,skill =MomentsBaseline(Mod1,5,lengths,TE_index)
+mom_sim = [E;A;A2;XG;skill]
 
 
-moms0
-Out=DataFrame(moms0, moms2)
+
+
+show((moms0.-mom_sim)./moms0)
+
 
 
 # using Optim instead--allows finegrained control of simplex
 
 function ModFit(x; weight=wghts)
-    Q=Criterion(x,pars,Mod1,labor_block,moms0,weight,5,lengths,TE_index)
-    return x
+    Q=Criterion(x,pars,Mod1,vlist,moms0,weight,5,lengths,TE_index)
+    return Q
 end
 
-a=Optim.optimize(ModFit, x0,
+
+
+a=Optim.optimize(ModFit, x1,
                 NelderMead(;initial_simplex=Optim.AffineSimplexer(0.01, -0.01)),
                 Optim.Options(f_calls_limit=100))
+a.minimizer
+
+writedlm("new_est.csv",a.minimizer)
 
 #E,A,A2,XG,skill_moms = MomentsBaseline(Mod1,5,lengths,TE_index)
 
@@ -137,27 +262,26 @@ a=Optim.optimize(ModFit, x0,
 # surely a nicer way to do this somehow
 moms0 = [E_mom;A_mom;A2_mom;XGmom;TE_moms0]
 
-E_mom_extract=[ones(length(E_mom)),
-zeros(length(A_mom)),zeros(length(A2_mom)),
-zeros(length(XGmom)),zeros(length(TE_moms0))]
+E_mom_extract=[ones(length(E_mom));
+    zeros(length(A_mom));zeros(length(A2_mom));
+    zeros(length(XGmom));zeros(length(TE_moms0))]
 
 
-A_mom_extract=[zeros(length(E_mom)),
-ones(length(A_mom)),zeros(length(A2_mom)),
-zeros(length(XGmom)),zeros(length(TE_moms0))]
+A_mom_extract=[zeros(length(E_mom));
+    ones(length(A_mom));zeros(length(A2_mom));
+    zeros(length(XGmom));zeros(length(TE_moms0))]
 
-A2_mom_extract=[zeros(length(E_mom)),
-zeros(length(A_mom)),obes(length(A2_mom)),
-zeros(length(XGmom)),zeros(length(TE_moms0))]
+A2_mom_extract=[zeros(length(E_mom));
+    zeros(length(A_mom));ones(length(A2_mom));
+    zeros(length(XGmom));zeros(length(TE_moms0))]
 
-XGmom_extract=[zeros(length(E_mom)),
-zeros(length(A_mom)),zeros(length(A2_mom)),
-ones(length(XGmom)),zeros(length(TE_moms0))]
+XGmom_extract=[zeros(length(E_mom));
+    zeros(length(A_mom));zeros(length(A2_mom));
+    ones(length(XGmom));zeros(length(TE_moms0))]
 
-TE_moms0_extract=[zeros(length(E_mom)),
-zeros(length(A_mom)),zeros(length(A2_mom)),
-zeros(length(XGmom)),ones(length(TE_moms0))]
+TE_moms0_extract=[zeros(length(E_mom)); zeros(length(A_mom)); zeros(length(A2_mom)); zeros(length(XGmom)); ones(length(TE_moms0))]
 
+wts_new=wghts.*(E_mom_extract.+A2_mom_extract.+XGmom_extract.+TE_moms0_extract)
 
 #=
 
@@ -167,7 +291,8 @@ to do so as follows:
 =#
 
 A=A_mom_extract.+A2_mom_extract
-A_fit=(wghts.* (A.*mom_sim .- A.*moms).^2)
+A_fit=(wghts.* (A.*mom_sim .- A.*moms0).^2)
+
 
 
 #=
@@ -177,7 +302,55 @@ You could do so as follows:
 
 =#
 
-wghtsA=wghts.*A_mom_extract
+wghtsEA=wghts.*(A_mom_extract+E_mom_extract)
 
-opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghtsA,5,lengths,TE_index)
-res2 = NLopt.optimize(opt2,x0)
+opt2,x2 = GetOptimization(pars,Mod1,vlist,moms0,wghtsEA,5,lengths,TE_index, maxevals=500; Global=1)
+res2 = NLopt.optimize(opt2,x2)
+x3=res2[2]
+Criterion(x3,pars,Mod1,vlist,moms0,wts_new,5,lengths,TE_index)
+
+E,A,A2,XG,skill =MomentsBaseline(Mod1,5,lengths,TE_index)
+
+mom_sim = [E;A;A2;XG;skill]
+moms0
+
+
+DF2=DataFrame([moms0, mom_sim])
+DF2
+
+sum(wghtsEA.* (mom_sim .- moms0).^2)
+X2=Fit(Mod1)
+gcf()
+
+
+opt2,x2 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index, maxevals=500)
+res3 = NLopt.optimize(opt2,x2)
+E,A,A2,XG,skill =MomentsBaseline(Mod1,5,lengths,TE_index)
+mom_sim = [E;A;A2;XG;skill]
+sum(wghtsEA.* (mom_sim .- moms0).^2)
+
+writedlm("new_est_LFP_participation.csv",x3)
+X2=Fit(Mod1)
+gcf()
+
+
+
+
+c1=CSV.read("new_est_LFP_participation.csv", header=false)
+c=c1[:,1]
+
+
+CSV.write("DF1.csv",DF2)
+
+Criterion(c,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+E,A,A2,XG,skill =MomentsBaseline(Mod1,5,lengths,TE_index)
+
+mom_sim = [E;A;A2;XG;skill]
+moms0
+
+
+DF2=DataFrame([moms0, mom_sim])
+
+pars
+
+Mod1.pc
