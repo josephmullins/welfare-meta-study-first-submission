@@ -137,7 +137,7 @@ function CalculateUtilities!(M)
 					pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 					Y = M.budget[s,tr,nk,age0,q,1,p,h] # if past time limit, then ineligible
 					hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-MX.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
+					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 					M.utility[s,tr,nk,age0,q,wu,p,h] = U
 				end
 			else

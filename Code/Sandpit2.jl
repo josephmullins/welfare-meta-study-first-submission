@@ -86,6 +86,7 @@ opt2,x0 = GetOptimization(pars,Mod1,child_block,moms0,wghts_child,5,lengths,TE_i
 res4 = optimize(opt2,x0)
 res5 = optimize(opt2,res4[2])
 
+
 # see if we can get FTP only
 # wghts_ftp = wghts_alt
 # wghts_ftp[1:32] .= 0
@@ -94,13 +95,15 @@ res5 = optimize(opt2,res4[2])
 # opt2,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_ftp,5,lengths,TE_index)
 # res2 = optimize(opt2,x0)
 
+vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
+opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+res = optimize(opt,x0)
+
+
 break
 
 wghts_alt2 = copy(wghts)
 wghts_alt1 = copy()
 
-vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
-res = optimize(opt,x0)
 
 #E,A,A2,XG,skill_moms = MomentsBaseline(Mod1,5,lengths,TE_index)
