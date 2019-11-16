@@ -40,7 +40,8 @@ Mod1=initialize_model();
 moms0 = [E_mom;A_mom;A2_mom;XGmom;TE_moms0]
 N1 = length(E_mom)
 N2 = length(TE_moms0)
-wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); ones(N1)/sqrt(abs(mean(A2_mom))); ones(4)/sqrt(abs(mean(XGmom))); ones(N2)/sqrt(abs(mean(TE_moms0)))]
+# forget about targeting A2 for now.
+wghts = [ones(N1)/sqrt(abs(mean(E_mom))); ones(N1)/sqrt(abs(mean(A_mom))); zeros(N1)/sqrt(abs(mean(A2_mom))); ones(4)/sqrt(abs(mean(XGmom))); ones(N2)/sqrt(abs(mean(TE_moms0)))]
 
 # set up the parameter object
 # :αc, :αθ, :αH, :αA, :β, :δI, :δθ, :ϵ, :τ, :pc, :wq, :αWR)
@@ -62,18 +63,33 @@ ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = 5
 
 pars = Parameters(np,lb,ub,αc,αθ,αH,αA,β,δI,δθ,ϵ,τ,pc,wq,αWR)
 
-labor_block = [:αc,:αH,:αA,:β]
-labor_block2 = [:αH,:αA,:β] #<- ok, I wonder if there's a better way to do this,
+labor_block = [:αc,:αH,:αA,:β,:wq,:αWR]
+#labor_block2 = [:αH,:αA,:β,:αWR] #<- ok, I wonder if there's a better way to do this,
 wghts_alt = copy(wghts)
 wghts_alt[2*N1+1:end] .= 0
 
 opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
 res1 = optimize(opt1,x0)
 
-opt2,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts_alt,5,lengths,TE_index)
+opt2,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index)
 res2 = optimize(opt2,x0)
 
+# write to simulate special case?
+child_block = [:δI,:δθ,:ϵ,:τ,:pc,:wq] #<- use wq?
+
+# see if we can get FTP only
+# wghts_ftp = wghts_alt
+# wghts_ftp[1:32] .= 0
+# wghts_ftp[69:end] .= 0
+# wghts_ftp[(N1+33):(N1+69)] = wghts[(N1+33):(N1+69)]
+# opt2,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_ftp,5,lengths,TE_index)
+# res2 = optimize(opt2,x0)
+
 break
+
+wghts_alt2 = copy(wghts)
+wghts_alt1 = copy()
+
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
 res = optimize(opt,x0)

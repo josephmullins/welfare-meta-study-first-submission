@@ -350,7 +350,6 @@ function Simulate(M::Model,R,Q,s,tr)
 	# ay_cat = rand(Multinomial(M.πk[s,tr]))
 	# cats = [0:2,3:5,6:16]
 	# age0 =
-	Random.seed!(123)
 	A = zeros(Q,R) #<- participation
 	A2 = zeros(Q,R) #<- receipt
 	Y = zeros(Q,R) #<- earnings
@@ -379,7 +378,7 @@ end
 
 function MomentsBaseline(M::Model,R,lengths,TE_index)
 	# forget about making general for now
-
+	Random.seed!(151119)
 	# -- set up some primitives
 	sample_size = [4803,1405+1410,3208,6009]
 	simsize = R*sample_size
