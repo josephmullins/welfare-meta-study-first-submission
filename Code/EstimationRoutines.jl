@@ -157,7 +157,7 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 		ftol_abs!(local_opt,1e-1) #<-!?
 		xtol_abs!(local_opt,1e-1)
 		opt.local_optimizer = local_opt::Opt
-		opt.population=50
+		opt.population=100
 	elseif Global==0 && SBPLX==1
 		opt = Opt(:LN_SBPLX,np)
 	else
