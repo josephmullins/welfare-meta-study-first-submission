@@ -71,11 +71,11 @@ wghts_alt[2*N1+1:end] .= 0
 # ----- Find initial guess of preference parameters
 opt1,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_alt,5,lengths,TE_index,maxevals=500)
 println(" ------ Round 1 ------")
-res1 = optimize(opt1,x0)
+res1 = NLopt.optimize(opt1,x0)
 println(" ------ Round 2 ------")
-res2 = optimize(opt1,res1[2])
+res2 = NLopt.optimize(opt1,res1[2])
 println(" ------ Round 3 ------")
-res3 = optimize(opt1,res2[2])
+res3 = NLopt.optimize(opt1,res2[2])
 
 # ---- Find initial guess of production parameters
 pars.δI[1] = -2.
@@ -83,8 +83,8 @@ wghts_child = copy(wghts);
 wghts_child[1:3*N1] .= 0
 child_block = [:δI,:δθ,:ϵ,:τ,:pc,:wq] #<- use wq?
 opt2,x0 = GetOptimization(pars,Mod1,child_block,moms0,wghts_child,5,lengths,TE_index,maxevals=500,no_solve=true) #<- just pick production pars to hit treatment effects, nothing else
-res4 = optimize(opt2,x0)
-res5 = optimize(opt2,res4[2])
+res4 = NLopt.optimize(opt2,x0)
+res5 = NLopt.optimize(opt2,res4[2])
 
 
 # see if we can get FTP only
@@ -98,6 +98,7 @@ res5 = optimize(opt2,res4[2])
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
 res = optimize(opt,x0)
+writedlm("new_est_JM.csv",res[2])
 
 
 break

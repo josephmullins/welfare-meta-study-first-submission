@@ -105,10 +105,10 @@ end
 
 function GetRecursiveCoefficient!(M)
 	Q = 18*4+1
-	M.Γδ[18+1] = 1/(1-M.β)
+	M.Γδ[18*4+1] = 1/(1-M.β)
 	for q=Q-1:-1:1
 		Age_Year=convert(Int,ceil(q/4))
-		M.Γδ[q] = 1 + M.β*M.δθ[Age_Year]*M.Γδ[Age_Year+1]
+		M.Γδ[q] = 1 + M.β*M.δθ[Age_Year]*M.Γδ[q+1]
 	end
 end
 
@@ -121,7 +121,7 @@ function CalculateUtilities!(M)
 		age = age0*4+q
 		if age<Q
 			Age_Year=convert(Int,ceil(q/4))
-			αV = M.αθ*M.δI[Age_Year]*M.β*M.Γδ[Age_Year+1]
+			αV = M.αθ*M.δI[Age_Year]*M.β*M.Γδ[q+1]
 			if M.TL[s,tr]
 				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2

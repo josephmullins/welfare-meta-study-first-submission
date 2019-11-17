@@ -37,6 +37,7 @@ function UpdateModel!(M::Model, Pars::Parameters)
 	M.αc=Pars.αc
 	M.αθ=Pars.αθ
 	M.αH=Pars.αH
+	M.αA = Pars.αA
 	M.β=Pars.β
 	for i in 1:length(M.δI)
 		M.δI[i]=exp(Pars.δI[1]+i*Pars.δI[2])
@@ -97,11 +98,14 @@ end
 function Criterion(x::Array{Float64,1},
 		Pars::Parameters,
 		M::Model,
-		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index)
+		vars::Array{Symbol,1},moms,wghts,R,lengths,TE_index;solve = true)
 
 	UpdatePars!(x,Pars,vars)
 	UpdateModel!(M, Pars)
-	SolveModel!(M)
+	if solve
+		SolveModel!(M)
+	end
+	Random.seed!(151119)
 	E,A,A2,XG,skill = MomentsBaseline(M,R,lengths,TE_index)
 	mom_sim = [E;A;A2;XG;skill]
 	Q = sum(wghts.* (mom_sim .- moms).^2)
@@ -129,7 +133,8 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	Global=0,
 	SBPLX=0,
 	maxevals=1000,
-	tightness=1e-3)
+	tightness=1e-3,
+	no_solve = false)
 
 	UpdateModel!(M, Pars)
 	SolveModel!(M)
@@ -152,7 +157,7 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 		ftol_abs!(local_opt,1e-1) #<-!?
 		xtol_abs!(local_opt,1e-1)
 		opt.local_optimizer = local_opt::Opt
-		opt.population=50
+		opt.population=100
 	elseif Global==0 && SBPLX==1
 		opt = Opt(:LN_SBPLX,np)
 	else
@@ -179,26 +184,59 @@ function GetOptimization(Pars::Parameters,M::Model,vars,moms,wghts,R,lengths,TE_
 	upper_bounds!(opt,ub)
 		# below it was (x,g) in Jo's old code
 		# don't know what the g was for--test this and see if it breaks (yes it breaks)
-	min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index))
+	if no_solve
+		min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index,solve=false))
+	else
+		min_objective!(opt,(x,g)->Criterion(x,Pars,M,vars,moms,wghts,R,lengths,TE_index))
+	end
 	maxeval!(opt,maxevals)
 
 	return opt,x0
-
 end
 
 function Fit(M)
 	SolveModel!(M)
 	E,A,A2,XG,th = MomentsBaseline(M,5,lengths,TE_index)
-	subplot(2,2,1)
-	plot(E[1:16])
-	plot(E_mom[1:16])
-	subplot(2,2,2)
-	plot(E[17:32])
-	plot(E_mom[17:32])
-	subplot(2,2,3)
-	plot(A[1:16])
-	plot(A_mom[1:16])
-	subplot(2,2,4)
-	plot(A[17:32])
-	plot(A_mom[17:32])
+	# CTJF
+	subplot(3,2,1)
+	plot(E[1:16],color="blue",linestyle="dashed")
+	plot(E_mom[1:16],color="blue")
+	plot(E[17:32],color="red",linestyle="dashed")
+	plot(E_mom[17:32],color="red")
+	subplot(3,2,2)
+	plot(A[1:16],color="blue",linestyle="dashed")
+	plot(A_mom[1:16],color="blue")
+	plot(A[17:32],color="red",linestyle="dashed")
+	plot(A_mom[17:32],color="red")
+
+	# FTP
+	subplot(3,2,3)
+	plot(E[33:50],color="blue",linestyle="dashed")
+	plot(E_mom[33:50],color="blue")
+	plot(E[51:68],color="red",linestyle="dashed")
+	plot(E_mom[51:68],color="red")
+	subplot(3,2,4)
+	plot(A[33:50],color="blue",linestyle="dashed")
+	plot(A_mom[33:50],color="blue")
+	plot(A[51:68],color="red",linestyle="dashed")
+	plot(A_mom[51:68],color="red")
+
+	# MFIP
+	subplot(3,2,5)
+	plot(E[69:80],color="blue",linestyle="dashed")
+	plot(E_mom[69:80],color="blue")
+	plot(E[81:92],color="red",linestyle="dashed")
+	plot(E_mom[81:92],color="red")
+	plot(E[93:104],color="green",linestyle="dashed")
+	plot(E_mom[93:104],color="green")
+	subplot(3,2,6)
+	plot(A[69:80],color="blue",linestyle="dashed")
+	plot(A_mom[69:80],color="blue")
+	plot(A[81:92],color="red",linestyle="dashed")
+	plot(A_mom[81:92],color="red")
+	plot(A[93:104],color="green",linestyle="dashed")
+	plot(A_mom[93:104],color="green")
+
+
+
 end
