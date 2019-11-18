@@ -40,6 +40,10 @@ Work_Reqs_Ind=[false true true; false true true; false true false;false true fal
 Mod1=initialize_model();
 initialize_model()
 
+
+Mod1.SNAP[1,1,1,1,1,1,1]
+Foodstamps_receipt[1,1,1,1,1,1,1]
+
 # set up moments and weights
 moms0 = [E_mom;A_mom;A2_mom;XGmom;TE_moms0]
 N1 = length(E_mom)

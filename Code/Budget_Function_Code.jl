@@ -198,7 +198,7 @@ println("Checkpoint 3")
                                                 Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]+AFDC-134,0),0)
                                                 budget1[site,1,nk,a0,q,e,p,w]=Program[p]*(AFDC+Foodstamps)+
                                                                             Earnings[site,q]*Work[w]
-                                                Foodstamps_receipt[site,1,nk,a0,q,e,p,w]=Foodstamps
+                                                Foodstamps_receipt[site,1,nk,a0,q,e,p,w]=Program[p]*Foodstamps
 
                                 # CTJF treatment
                                 if site==1 # next I fill the treatment arms in one by one
