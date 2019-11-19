@@ -14,11 +14,12 @@ using DataFrames
 # NT - number of treatments (3)
 mutable struct Model
 	# preferences
-	αc::Float64
+	αc::Array{Float64,1}
 	αθ::Float64
 	αH::Array{Float64,1} #<- one per site
 	αA::Array{Float64,1} #<- one per site
 	β::Float64 #<- discounting
+	σA::Float64 #<- standard deviation of welfare shocks
 
 	# production
 	δI::Array{Float64,1} #<- one per age of child in years
@@ -58,11 +59,12 @@ end
 
 
 function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt; πk=ones(N_sites,N_arms).*(1/3),πK=ones(N_sites,N_arms).*(1/3))
-	αc=0.5
+	αc=0.5*ones(N_sites)
 	αθ=0.5
 	αH=ones(N_sites)*0.5 #<- one per site
 	αA=ones(N_sites)*0.5#<- one per site
 	β=0.95 # seems like an ok guess
+	σA = 1.
 
 	# production
 	δI=ones(N_age)*0.5 #<- one per age of child in years
@@ -98,7 +100,7 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
 
-	return Model(αc,αθ,αH,αA,β,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,Work_Reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	return Model(αc,αθ,αH,αA,β,σA,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,Work_Reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
 end
 
 
@@ -126,8 +128,8 @@ function CalculateUtilities!(M)
 				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2
 						Y = M.budget[s,tr,nk,age0,q,2,p,h] # I change eligibility to be a 0-1 variable, 2 indexing eligible
-						hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-						U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
+						hr = (h-1)*30 #
+						U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 						M.utility[s,tr,nk,age0,q,wu,p,h] = U
 					end
 					# if reach max time limit, only get food stamps
@@ -136,16 +138,16 @@ function CalculateUtilities!(M)
 				for p=1:2,h=1:2
 					pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 					Y = M.budget[s,tr,nk,age0,q,1,p,h] # if past time limit, then ineligible
-					hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
+					hr = (h-1)*30 #
+					U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 					M.utility[s,tr,nk,age0,q,wu,p,h] = U
 				end
 			else
 				for p=1:2,h=1:2
 					pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 					Y = M.budget[s,tr,nk,age0,q,2,p,h]
-					hr = (h-1)*30 # the old draft had hrs below not hr--I assume it was a typo?
-					U = (M.αc+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
+					hr = (h-1)*30 #
+					U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 					M.utility[s,tr,nk,age0,q,1,p,h] = U
 				end
 			end
@@ -153,7 +155,7 @@ function CalculateUtilities!(M)
 			for p=1:2,h=1:2
 				Y = M.budget_ageout[s,q,p,h] # this is after the kids have aged out
 				hr = (h-1)*30
-				U = M.αc*log(Y+M.wq*(112-hr)) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
+				U = M.αc[s]*log(Y+M.wq*(112-hr)) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 				M.utility[s,tr,nk,age0,q,1,p,h] = U
 			end
 		end
@@ -202,19 +204,18 @@ function SolveModel!(M::Model,s,tr,nk,age0)
 				# an efficiency gain here, potentially
 				v0 = M.utility_welf[s,tr,nk,age0,q,wu,1] + M.β*M.V[s,tr,nk,age0,q+1,wu]
 				v1 = M.utility_welf[s,tr,nk,age0,q,wu,2] + M.β*M.V[s,tr,nk,age0,q+1,max(wu+1,M.TLmax[s,tr]+1)]
-				M.V[s,tr,nk,age0,q,wu] = log(exp(v0)+exp(v1))
-				M.welf_prob[s,tr,nk,age0,q,wu] = 1/(1+exp(v0-v1))
+				M.V[s,tr,nk,age0,q,wu] = M.σA*log(exp(v0/M.σA)+exp(v1/M.σA))
+				M.welf_prob[s,tr,nk,age0,q,wu] = 1/(1+exp((v0-v1)/M.σA))
 			end
 		else
 			# no time limits
 			# an efficiency gain here, potentially
 			v0 = M.utility_welf[s,tr,nk,age0,q,1,1] + M.β*M.V[s,tr,nk,age0,q+1,1]
 			v1 = M.utility_welf[s,tr,nk,age0,q,1,2] + M.β*M.V[s,tr,nk,age0,q+1,1]
-			M.welf_prob[s,tr,nk,age0,q,1] = 1/(1+exp(v0-v1))
+			M.welf_prob[s,tr,nk,age0,q,1] = 1/(1+exp((v0-v1)/M.σA))
 		end
 	end
 end
-
 
 
 
@@ -285,6 +286,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	θ = zeros(Q+1)
 	Xc = zeros(Q)
 	Foodstamps=zeros(Q)
+	TotInc = zeros(Q)
 	age = age0*4 #<- convert age to quarterly number
 	if age==0
 		age=1 # I don't want to worry about 1-indexing
@@ -293,7 +295,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	for q=1:Q
 		Age_Year=convert(Int,ceil(q/4))
 		welf = rand()<M.welf_prob[s,tr,nk,age0+1,q,wu] #<- no heterogeneity here
-		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,wu,1+welf] #pretty sure this needs another dimension
+		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,wu,1+welf] #
 		Y[q] = L[q]*M.earnings[s,q] #<-
 		Elig=1 # start off eligible
 		if M.TL[s,tr] && wu==M.TLmax[s,tr]+1 # switch off only in places with time limits
@@ -305,19 +307,24 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
 									M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				TotInc[q] = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
 				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
 									M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				TotInc[q] = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 			else
+				TotInc[q] = M.budget_ageout[s,q,2,1+convert(Int,L[q])]
 				if s==1 || s==2 # count this as snap for MN, earnings otherwise
 					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+					TotInc[q] = M.budget_ageout[s,q,2,1+convert(Int,L[q])]
 				else
 					Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 				end
 			end
-
 			A2[q] = payment
+		else
+			TotInc[q] = L[q]*M.earnings[s,q]
 		end
 
 		inc = Y[q] + A2[q]
@@ -331,18 +338,18 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 			θ[q+1] = θ[q]
 		end
 
-
+		# try just participation (don't worry about other stuff)
 
 		age += 1
 		if M.TL[s,tr]
-			A[q] = (age<=18*4)*(A2[q]>0)*(wu<M.TLmax[s,tr]+1)
+			A[q] = (age<=18*4)*(wu<M.TLmax[s,tr]+1)*(A2[q]>0)
 			wu = min(wu+welf,M.TLmax[s,tr]+1) # I think this should be min not max?
 		else
 			A[q] = (age<=18*4)*(A2[q]>0)
 		end
 
 	end
-	return A,A2,Y,L,θ,Xc, Foodstamps
+	return A,A2,Y,L,θ,Xc,Foodstamps,TotInc
 end
 
 # simulate R panels of length Q for a site x treatment combination
@@ -354,6 +361,7 @@ function Simulate(M::Model,R,Q,s,tr)
 	A2 = zeros(Q,R) #<- receipt
 	Y = zeros(Q,R) #<- earnings
 	L = zeros(Q,R) #<- work
+	TotInc = zeros(Q,R) #<- total income
 	θ = zeros(Q+1,R)
 	Xc = zeros(Q,R)
 	Foodstamps=zeros(Q,R)
@@ -367,13 +375,13 @@ function Simulate(M::Model,R,Q,s,tr)
 		age0 = rand(age_cats[ac2])
 		nk = rand(nk_dist)
 		nk2=findmax(nk)[2]
-		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r],Foodstamps[:,R] = Simulate(M,Q,s,tr,nk2,age0)
+		A[:,r],A2[:,r],Y[:,r],L[:,r],θ[:,r],Xc[:,r],Foodstamps[:,r],TotInc[:,r] = Simulate(M,Q,s,tr,nk2,age0)
 		for i in 1:Q
 			AGE[i,r] = age0 + floor((i-1)/4) # ages start at 0, had issue with 0-indexinf
 		end
 	end
 	return (AGE=AGE,Participation=A,Benefit_Receipt=A2,
-	Earned_Income=Y,LFP=L,Skills=θ,Childcare=Xc,Foodstamps=Foodstamps)
+	Earned_Income=Y,LFP=L,Skills=θ,Childcare=Xc,Foodstamps=Foodstamps,TotInc = TotInc)
 end
 
 function MomentsBaseline(M::Model,R,lengths,TE_index)
@@ -386,6 +394,7 @@ function MomentsBaseline(M::Model,R,lengths,TE_index)
 	E = zeros(N1)
 	A = zeros(N1)
 	A2 = zeros(N1)
+	Y = zeros(N1)
 	n_arms = [2,2,3,3]
 	years_childcare = [3,3,3,3]
 	year_meas = [3,4,3,3]
@@ -402,6 +411,7 @@ function MomentsBaseline(M::Model,R,lengths,TE_index)
 			E[curr_slice] = mean(dat.LFP,dims=2)
 			A[curr_slice] = mean(dat.Participation,dims=2)
 			A2[curr_slice] = mean(dat.Benefit_Receipt,dims=2)
+			Y[curr_slice] = mean(dat.TotInc,dims=2)
 			θ[i,j,1:simsize[i]] = dat.Skills[year_meas[i]*4,:]
 			AGE[i,j,1:simsize[i]] = dat.AGE[year_meas[i]*4,:]
 			if j<=2
@@ -424,5 +434,5 @@ function MomentsBaseline(M::Model,R,lengths,TE_index)
 		slice_treat = (AGE[s,1+a,:].>=amin) .& (AGE[s,1+a,:].<=amax)
 		skill_moms[m] = mean(θ[s,1+a,slice_treat]) - mean(θ[s,1,slice_control])
 	end
-	return E,A,A2,[XG_moms;XG_mom2],skill_moms
+	return E,A,A2,[XG_moms;XG_mom2],skill_moms,Y
 end

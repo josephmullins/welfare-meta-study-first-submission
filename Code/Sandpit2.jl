@@ -64,7 +64,7 @@ ub = (αc = Inf, αθ = Inf, αH = Inf*ones(4),αA = Inf*ones(4),β = 1, δI = [
 pars = Parameters(np,lb,ub,αc,αθ,αH,αA,β,δI,δθ,ϵ,τ,pc,wq,αWR)
 
 labor_block = [:αc,:αH,:αA,:β,:wq,:αWR]
-#labor_block2 = [:αH,:αA,:β,:αWR] #<- ok, I wonder if there's a better way to do this,
+labor_block2 = [:αc,:αH,:αA,:β,:αWR] #<- ok, I wonder if there's a better way to do this,
 wghts_alt = copy(wghts)
 wghts_alt[2*N1+1:end] .= 0
 
@@ -97,6 +97,13 @@ res5 = optimize(opt2,res4[2])
 
 vlist = [:αc,:αθ,:αH,:αA,:β,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index)
+res = optimize(opt,x0)
+
+opt,x0 = GetOptimization(pars,Mod1,[:αc],moms0,wghts,5,lengths,TE_index)
+res = optimize(opt,x0)
+
+
+opt,x0 = GetOptimization(pars,Mod1,labor_block2,moms0,wghts,5,lengths,TE_index)
 res = optimize(opt,x0)
 
 
