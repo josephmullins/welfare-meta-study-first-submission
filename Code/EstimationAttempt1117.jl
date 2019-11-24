@@ -108,6 +108,14 @@ min_objective!(opt_special,(x,g)->CriterionSpecial(x))
 x0 = [Mod1.αc[1],Mod1.αA[1],Mod1.αH[1],Mod1.β,Mod1.σA]
 res = optimize(opt_special,x0)
 
+E,A,A2,XG,th,Y = MomentsBaseline(Mod1,5,lengths,TE_index);
+D0 = Q_moms[:,[:Year,:Quarter,:Site,:Treatment,:LFP,:Participation]]
+D0.Case = "Data"
+D1 = Q_moms[:,[:Year,:Quarter,:Site,:Treatment]]
+D1.LFP = E*100
+D1.Participation = A*100
+D1.Case = "Model"
+CSV.write("ModelFit.csv",[D0;D1])
 
 break
 println("Just getting Production Parameters")

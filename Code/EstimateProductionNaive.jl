@@ -43,11 +43,14 @@ for i=1:4
     end
 end
 
-x0 = [0,-0.1,0.9,2.,0.,1.2,36.,0.2,0.4]
+x0 = [0,-0.1,0.9,2.,0.,1.2,36.]#,0.2,0.4]
 #x0 = [0,0.,0.7,-0.1,0.2,1.2,36.,0.4,0.4]
-lb = [-5,-0.3,0.,-3.,-0.3,0.,0.,0.01,0.01]
-ub = [3.,0.1,3.,4.,0.3,100.,200.,0.99,0.99]
-#τ = 0.01*ones(4,3)
+lb = [-5,-0.5,0.,-3.,-0.5,0.,0.]#,0.01,0.01]
+ub = [5.,0.5,4.,4.,0.3,300.,300.]#,0.99,0.99]
+τ = 0.01*ones(4,3)
+#τ[3:4,1] .= 0.4
+#τ[3:4,2:3] .= 0.65
+
 
 function Update(x)
     δI = exp.(x[1] .+ x[2]*collect(1:18))
@@ -55,9 +58,9 @@ function Update(x)
     pc = exp.(x[4] .+ x[5]*collect(1:18))
     ϵ = x[6]
     wq = x[7]
-    τ[3:4,1] .= x[8]
-    τ[3,2:3] .= x[9]
-    τ[4,2:3] .= x[9]
+    # τ[3:4,1] .= x[8]
+    # τ[3,2:3] .= x[9]
+    # τ[4,2:3] .= x[9]
     return (δI = δI,δθ=δθ,pc=pc,ϵ=ϵ,wq=wq,τ=τ)
 end
 
@@ -67,9 +70,9 @@ function NaiveMoments(x)
     pc = exp.(x[4] .+ x[5]*collect(1:18))
     ϵ = x[6]
     wq = x[7]
-    τ[3:4,1] .= x[8]
-    τ[3,2:3] .= x[9]
-    τ[4,2:3] .= x[9]
+    # τ[3:4,1] .= x[8]
+    # τ[3,2:3] .= x[9]
+    # τ[4,2:3] .= x[9]
 
     # - get treatment effects
     TE = zeros(size(TE_index)[1])
@@ -91,8 +94,13 @@ function NaiveMoments(x)
                 inc1 = Y[s,arm+1,q]
                 h1 = 30*L[s,arm+1,q]
                 Age_Year = a0+floor(Int64,q/4)
+                if Age_Year<=6
                     pc0 = (1-τ[s,1])*pc[Age_Year]
                     pc1 = (1-τ[s,1+arm])*pc[Age_Year]
+                else
+                    pc0 = pc[Age_Year]
+                    pc1 = pc[Age_Year]
+                end
                 if Age_Year<18
                     θ0 = δI[Age_Year]*log(inc0 + wq*(112-h0)) - 1/(1-ϵ)* δI[Age_Year]*(L[s,1,q]*log(112-30 + 30*pc0^(1-ϵ)) + (1-L[s,1,q])*log(112)) + δθ[Age_Year]*θ0
                     θ1 = δI[Age_Year]*log(inc1 + wq*(112-h1)) - 1/(1-ϵ)* δI[Age_Year]*(L[s,arm+1,q]*log(112-30 + 30*pc1^(1-ϵ)) + (1-L[s,arm+1,q])*log(112)) + δθ[Age_Year]*θ1
@@ -122,7 +130,8 @@ function NaiveMoments(x)
 end
 wghts = ones(20)
 wghts[1:4] .= 0.
-wghts = [100*ones(4);N_control]
+wghts = [0*ones(4);N_control]
+wghts[end-8:end] .= 0.
 
 function Criterion(x)
     moms = NaiveMoments(x)
@@ -145,7 +154,7 @@ function Criterion(x,g)
 end
 
 Criterion(x0)
-opt = Opt(:LD_LBFGS,9)
+opt = Opt(:LD_LBFGS,7)
 lower_bounds!(opt,lb)
 upper_bounds!(opt,ub)
 min_objective!(opt,(x,g)->Criterion(x,g))
@@ -166,8 +175,8 @@ h1 = L[1,2,1]*30
 th0 = log(inc0 + wq*(112-h0)) - 1/(1-ϵ)*log(112-h0 + h0*pc0^(1-ϵ))
 th1 = log(inc1 + wq*(112-h1)) - 1/(1-ϵ)*log(112-h1 + h1*pc1^(1-ϵ))
 
-function TestOut(E,wq,ϵ,pc,h1,h0)
+function TestOut(E,wq,ϵ,pc,h1,h0,sub)
     th0 = log(h0*E + wq*(112-h0)) - (1/(1-ϵ))*log(112-h0 + h0*pc^(1-ϵ))
-    th1 = log(h1*E + wq*(112-h1))- (1/(1-ϵ))*log(112-h1 + h1*pc^(1-ϵ))
+    th1 = log(h1*E + wq*(112-h1))- (1/(1-ϵ))*log(112-h1 + h1*(sub*pc)^(1-ϵ))
     return th1-th0
 end

@@ -213,11 +213,15 @@ INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbsy10.tfm
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
 INPUT /Users/joseph/Library/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map
+INPUT MullinsWelfareMetaAnalysis.bbl
+INPUT MullinsWelfareMetaAnalysis.bbl
+INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/tfm/public/cm/cmcsc10.tfm
 INPUT MullinsWelfareMetaAnalysis.aux
 INPUT ./MullinsWelfareMetaAnalysis.out
 INPUT ./MullinsWelfareMetaAnalysis.out
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
+INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 INPUT /Users/joseph/Library/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb
