@@ -304,13 +304,21 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		if welf
 			payment=0
 			if age<=18*4 && Elig==1
+				if s==1 || s==2 #MN counts SNAP with benefits
 				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
 									M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				else
+					payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				end
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 				TotInc[q] = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
+				if s==1 || s==2 #MN counts SNAP with benefits
 				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
 									M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				else
+					payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+				end
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 				TotInc[q] = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 			else
@@ -319,6 +327,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 					TotInc[q] = M.budget_ageout[s,q,2,1+convert(Int,L[q])]
 				else
+					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 					Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 				end
 			end
