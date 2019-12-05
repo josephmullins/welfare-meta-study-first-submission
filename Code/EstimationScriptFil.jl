@@ -51,6 +51,13 @@ wghts = [ones(N1)/abs(mean(E_mom));
         N_control/(mean(N_control)*abs(mean(TE_moms0)));
         zeros(N1)/abs(mean(Y_mom))]
 
+wghts_Full = [ones(N1)/abs(mean(E_mom));
+        ones(N1)/abs(mean(A_mom));
+        ones(N1)/abs(mean(A2_mom));
+        5*ones(4)/abs(mean(XGmom));
+        N_control/(mean(N_control)*abs(mean(TE_moms0)));
+        ones(N1)/abs(mean(Y_mom))]
+
 
 ENames= fill("E",N1)
 ANames= fill("A",N1)
@@ -111,6 +118,27 @@ function pars_to_vec(pars)
     return x1
 end
 
+function pars_to_vec_LBlock(pars,Par1) # feed in best guesses only in labor block
+
+    x1=[Par1[1], Par1[2],  Par1[3], Par1[4],
+    pars.αθ,
+    Par1[6], Par1[7], Par1[8], Par1[9],
+    Par1[10],Par1[11], Par1[12],Par1[13],
+    Par1[14],
+    Par1[15],
+    pars.δI[1], pars.δI[2],
+    pars.δθ, pars.ϵ,
+    pars.τ[1],pars.τ[2], pars.pc[1], Par1[23], Par1[24]]
+
+    return x1
+end
+
+x0=pars_to_vec(pars)
+
+x1=pars_to_vec_LBlock(pars,Par1)
+
+
+
 Names_Pars=["alpha_c","alpha_c","alpha_c","alpha_c",
             "alpha_theta",
             "alpha_H","alpha_H","alpha_H","alpha_H",
@@ -121,14 +149,16 @@ Names_Pars=["alpha_c","alpha_c","alpha_c","alpha_c",
             "delta_theta","epsilon",
             "tau","tau","pc","wq","alpha_WR"]
 
-Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
-Criterion(Par1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
+
 
 labor_block = [:αc,:αH,:αA,:β,:σA,:wq,:αWR]
 labor_block2 = [:αc,:αH,:αA,:β,:αWR] #<- ok, I wonder if there's a better way to do this,
 #TE_block = [:δI,:δθ,:ϵ,:τ,:pc]
 TE_block = [:δI,:δθ,:ϵ,:pc]
 vlist = [:αc,:αθ,:αH,:αA,:β,:σA,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
+
+Criterion(x0,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
+Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 
 println("Just getting Labor Parameters")
 
@@ -138,16 +168,21 @@ res = optimize(opt,x0)
 
 # Now let's take a stab at using all the params to target E and A--we are still massively overidentified
 
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index,maxevals = 200,LBFGS = 1)
+opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 200,LBFGS = 1)
 res1 = optimize(opt,x0)
 
 # finally let's polish off with a local optimizer or two
 
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000,SBPLX = 1)
+opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000,SBPLX = 1)
 res2 = optimize(opt,x0)
 
-opt,x0 = GetOptimization(pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000)
+opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000)
 res3 = optimize(opt,x0)
+
+# OK, Nelder-Mead seemed to do better than Subplex here, and it didn't seem like it was done optimizing.
+
+opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000)
+res4 = optimize(opt,x0)
 
 # Next let's check and store the pars
 
@@ -157,6 +192,7 @@ x0
 
 x1=pars_to_vec(pars)
 
+Criterion(x1,pars,Mod1,vlist,moms0,wghts_Full,5,lengths,TE_index, true, true)
 Criterion(x1,pars,Mod1,vlist,moms0,wghts,5,lengths,TE_index, true, true)
 Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 
@@ -186,7 +222,10 @@ X2=Fit(Mod1)
 gcf()
 savefig("LFP_Part_Fit.pdf")
 
-
+clf()
+X2=Fit_A2_Y(Mod1)
+gcf()
+savefig("TotInc_Receipt_Fit.pdf")
 
 #opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 500,LBFGS = 0)
 #res = optimize(opt,x0)

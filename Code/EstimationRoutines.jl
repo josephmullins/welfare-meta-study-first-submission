@@ -328,6 +328,76 @@ function FitTE(M)
 
 end
 
+function Fit_A2_Y(M)
+	SolveModel!(M)
+	E,A,A2,XG,th,Y = MomentsBaseline(M,5,lengths,TE_index)
+	# CTJF
+	subplot(2,4,1)
+	title("Y CTJF")
+	plot(Y[1:16],color="blue",linestyle="dashed")
+	plot(Y_mom[1:16],color="blue")
+	plot(Y[17:32],color="red",linestyle="dashed")
+	plot(Y_mom[17:32],color="red")
+	subplot(2,4,5)
+	title("Receipt CTJF")
+	plot(A2[1:16],color="blue",linestyle="dashed")
+	plot(A2_mom[1:16],color="blue")
+	plot(A2[17:32],color="red",linestyle="dashed")
+	plot(A2_mom[17:32],color="red")
+
+	# FTP
+	subplot(2,4,2)
+	title("Y FTP")
+	plot(Y[33:50],color="blue",linestyle="dashed")
+	plot(Y_mom[33:50],color="blue")
+	plot(Y[51:68],color="red",linestyle="dashed")
+	plot(Y_mom[51:68],color="red")
+	subplot(2,4,6)
+	title("Receipt FTP")
+	plot(A2[33:50],color="blue",linestyle="dashed")
+	plot(A2_mom[33:50],color="blue")
+	plot(A2[51:68],color="red",linestyle="dashed")
+	plot(A2_mom[51:68],color="red")
+
+	# MFIP-LR
+	subplot(2,4,3)
+	title("Y MFIP-LR")
+	plot(Y[69:80],color="blue",linestyle="dashed")
+	plot(Y_mom[69:80],color="blue")
+	plot(Y[81:92],color="red",linestyle="dashed")
+	plot(Y_mom[81:92],color="red")
+	plot(Y[93:104],color="green",linestyle="dashed")
+	plot(Y_mom[93:104],color="green")
+	subplot(2,4,7)
+	title("Receipt MFIP-LR")
+	plot(A2[69:80],color="blue",linestyle="dashed")
+	plot(A2_mom[69:80],color="blue")
+	plot(A2[81:92],color="red",linestyle="dashed")
+	plot(A2_mom[81:92],color="red")
+	plot(A2[93:104],color="green",linestyle="dashed")
+	plot(A2_mom[93:104],color="green")
+
+	# MFIP-RA
+	subplot(2,4,4)
+	title("Y MFIP-RA")
+	plot(Y[105:116],color="blue",linestyle="dashed")
+	plot(Y_mom[105:116],color="blue")
+	plot(Y[117:128],color="red",linestyle="dashed")
+	plot(Y_mom[117:128],color="red")
+	plot(Y[129:140],color="green",linestyle="dashed")
+	plot(Y_mom[129:140],color="green")
+	subplot(2,4,8)
+	title("Receipt MFIP-RA")
+	plot(A2[105:116],color="blue",linestyle="dashed")
+	plot(A2_mom[105:116],color="blue")
+	plot(A2[117:128],color="red",linestyle="dashed")
+	plot(A2_mom[117:128],color="red")
+	plot(A2[129:140],color="green",linestyle="dashed")
+	plot(A2_mom[129:140],color="green")
+
+end
+
+
 
 function testfunc(x::Array{Float64,1},p,verbose)
 	Q = (x[1]-p[1])^2 + (x[2]-p[2])^2 + (x[3]-p[3])^2
