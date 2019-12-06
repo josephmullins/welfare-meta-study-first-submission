@@ -31,7 +31,7 @@ Dev_Years=18
 
 budget1=zeros(4,3,3,Dev_Years,Dev_Years*4,2,2,2)
 
-site=["CTJF" "FTP" "MFIP-LR-F" "MFIP-LR-F"]
+site=["CTJF" "FTP" "MFIP-LR-F" "MFIP-R-F"]
 
 
 # I store the first year I observed a program. This will come in handy later.
