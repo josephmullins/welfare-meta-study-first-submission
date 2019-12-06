@@ -207,11 +207,11 @@ println("Checkpoint 3")
                                         Too_rich=Work[w] # priced out of benefits AND food stamps if you pass a threshold
                                     end
                                     Foodstamps_C=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )# I can probably do better than copy-pasting...
-                                    CTJF=(SNAP[nk,site, q]+Benefit[nk,1,q])*(1-Too_rich)
-                                    budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*Foodstamps_C)+
+                                    CTJF=(Foodstamps_C+Benefit[nk,1,q])*(1-Too_rich)
+                                    budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*(1-Too_rich)*Foodstamps_C)+
                                                                             Earnings[site,q]*Work[w]
                                     budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
-                                    Foodstamps_receipt[site,2,nk,a0,q,e,p,w]=Program[p]*((1-Eligible[e])*Foodstamps_C+Eligible[e]*(1-Too_rich)*SNAP[nk,site, q])
+                                    Foodstamps_receipt[site,2,nk,a0,q,e,p,w]=Program[p]*((1-Eligible[e])*(1-Too_rich)*Foodstamps_C+Eligible[e]*(1-Too_rich)*SNAP[nk,site, q])
                                     Foodstamps_receipt[site,3,nk,a0,q,e,p,w]=Foodstamps_receipt[site,2,nk,a0,q,e,p,w]
                                 # FTP treatment
                                 elseif site==2
