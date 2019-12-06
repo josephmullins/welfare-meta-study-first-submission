@@ -225,7 +225,7 @@ println("Checkpoint 3")
                             elseif site==3 || site==4
                             # MFIP treatment
                                 Foodstamps_M=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
-                                D=Benefit[nk,site,q]+SNAP[nk,site, q]
+                                D=Benefit[nk,site,q]+Foodstamps_M # notice the deviation from the formula in the document
                                 MFIP=max( min(1.2*D-(1-0.38)*Earnings[site,q]*Work[w],D)  ,0)
                                 budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(MFIP*Eligible[e]+(1-Eligible[e])*Foodstamps_M)+
                                                                             Earnings[site,q]*Work[w]
