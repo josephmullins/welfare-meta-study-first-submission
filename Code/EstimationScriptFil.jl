@@ -1,7 +1,7 @@
 using DataFrames
 using PyPlot
 using Revise
-includet("BaselineModel.jl")
+include("BaselineModel.jl")
 includet("EstimationRoutines.jl")
 using DelimitedFiles
 cd("/Users/FilipB/github/welfare-meta-study/Code")
@@ -35,6 +35,7 @@ TimeLimit_Ind=[false true true; false true true; false false false; false false 
 TimeLimits=[0 7 7; 0 8 8; 0 0 0; 0 0 0]
 lengths = [16,18,12,12]
 Work_Reqs_Ind=[false true true; false true true; false true false;false true false];
+
 
 # set up the model
 Mod1=initialize_model();
@@ -158,7 +159,7 @@ TE_block = [:δI,:δθ,:ϵ,:pc]
 vlist = [:αc,:αθ,:αH,:αA,:β,:σA,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 
 Criterion(x0,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
-Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
+@time Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 
 println("Just getting Labor Parameters")
 
@@ -166,10 +167,7 @@ opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_in
 res = optimize(opt,x0)
 
 
-# Now let's take a stab at using all the params to target E and A--we are still massively overidentified
 
-opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 200,LBFGS = 1)
-res1 = optimize(opt,x0)
 
 # finally let's polish off with a local optimizer or two
 
@@ -244,3 +242,4 @@ Te is treatment effects on children
 
 
 =#
+ 
