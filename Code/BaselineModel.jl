@@ -5,6 +5,7 @@ using Profile
 using CSV
 using GLM
 using DataFrames
+includet("Budget_Function_Code.jl")
 #cd("/Users/FilipB/github/welfare-meta-study/Code")
 #include("Budget_Function_Code.jl") # will use budget1, Earnings, Budget_Ageout
 
@@ -54,11 +55,12 @@ mutable struct Model
 	V::Array{Float64,6} # value(site,arm,NumChild,age0,quarter,usage) (NS x NT x 3 x 18 x Q x TLmax+1)
 	welf_prob::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob::Array{Float64,7} # (site,arm,NumChild,age0,quarter,welfare_choice) (NS x NT x 3 x 18 x Q x 2)
+	Budget_Function::Function
 
 end
 
 
-function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt; πk=ones(N_sites,N_arms).*(1/3),πK=ones(N_sites,N_arms).*(1/3))
+function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_Ind,TimeLimits,τ, Work_Reqs, Foodstamps_receipt,Budget_Function; πk=ones(N_sites,N_arms).*(1/3),πK=ones(N_sites,N_arms).*(1/3), )
 	αc=0.5*ones(N_sites)
 	αθ=0.5
 	αH=ones(N_sites)*0.5 #<- one per site
@@ -99,8 +101,8 @@ function Model(N_sites, N_arms, N_age, budget,budget_ageout,qs, Earn, TimeLimit_
 	V=zeros(N_sites,N_arms,3,N_age,qs+1,htl+1)#::Array{Float64,6} # value(site,arm,NumChild,age0,quarter,usage) (NS x NT x 3 x 16 x Q x TLmax+1)
 	welf_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl)#::Array{Float64,6} # (site,arm,NumChild,age0,quarter,usage)
 	work_prob=zeros(N_sites,N_arms,3,N_age,qs+1,htl,2)#::Array{Float64,7} # (site,arm,NumChild,age0,quarter,usage,welfare_choice) (NS x NT x 3 x 16 x Q x 2)
-
-	return Model(αc,αθ,αH,αA,β,σA,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,Work_Reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob)
+	Budget_Function=Budget_Function
+	return Model(αc,αθ,αH,αA,β,σA,δI,δθ,ϵ,pc, earnings,Foodstamps_receipt,wq,αWR_p,αWR,Work_Reqs,TL,TLmax,τ,πk,πK,Γδ,budget,budget_ageout,utility,utility_welf,V,welf_prob,work_prob,Budget_Function)
 end
 
 
@@ -128,6 +130,7 @@ function CalculateUtilities!(M)
 				for wu=1:M.TLmax[s,tr]
 					for p=1:2,h=1:2
 						Y = M.budget[s,tr,nk,age0,q,2,p,h] # I change eligibility to be a 0-1 variable, 2 indexing eligible
+						#Y=M.Budget_Function(s,tr,nk,age0,q,2,p,h, M.earnings[s,q]).Budget
 						hr = (h-1)*30 #
 						U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*M.pc[Age_Year]^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 						M.utility[s,tr,nk,age0,q,wu,p,h] = U
@@ -138,6 +141,7 @@ function CalculateUtilities!(M)
 				for p=1:2,h=1:2
 					pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 					Y = M.budget[s,tr,nk,age0,q,1,p,h] # if past time limit, then ineligible
+					#Y=M.Budget_Function(s,tr,nk,age0,q,1,p,h, M.earnings[s,q]).Budget
 					hr = (h-1)*30 #
 					U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 					M.utility[s,tr,nk,age0,q,wu,p,h] = U
@@ -146,6 +150,7 @@ function CalculateUtilities!(M)
 				for p=1:2,h=1:2
 					pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 					Y = M.budget[s,tr,nk,age0,q,2,p,h]
+					#Y=M.Budget_Function(s,tr,nk,age0,q,2,p,h, M.earnings[s,q]).Budget
 					hr = (h-1)*30 #
 					U = (M.αc[s]+αV)*log(Y+M.wq*(112-hr)) - αV/(1-M.ϵ[Age_Year])*log(112-hr+hr*pc^(1-M.ϵ[Age_Year])) - M.αH[s]*(h-1) - M.αA[s]*(p-1) - M.αWR[s,tr]*(p-1)*(2-h)
 					M.utility[s,tr,nk,age0,q,1,p,h] = U
@@ -154,6 +159,7 @@ function CalculateUtilities!(M)
 		else #<- no investment stuff
 			for p=1:2,h=1:2
 				Y = M.budget_ageout[s,q,p,h] # this is after the kids have aged out
+				#Y=M.Budget_Function(s,tr,nk,age0,q,2,p,h, M.earnings[s,q]; ageout=1).Budget
 				hr = (h-1)*30
 				U = M.αc[s]*log(Y+M.wq*(112-hr)) - M.αH[s]*(h-1) - M.αA[s]*(p-1)
 				M.utility[s,tr,nk,age0,q,1,p,h] = U
@@ -220,7 +226,7 @@ end
 
 
 function initialize_model()
-	Mod1=Model(4,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind,Foodstamps_receipt)
+	Mod1=Model(4,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind,Foodstamps_receipt, Budget_Function)
 	GetRecursiveCoefficient!(Mod1)
 	CalculateUtilities!(Mod1)
 	SolveWorkProb!(Mod1)
@@ -304,22 +310,46 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		if welf
 			payment=0
 			if age<=18*4 && Elig==1
-				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
-									M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				#M1=M.Budget_Function(s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q]), M.earnings[s,q])
+				if s==1 || s==2 #MN counts SNAP with benefits
+				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				#payment=M1.Welfare
+				else
+					payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+					#payment=M1.Both
+				end
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
 				TotInc[q] = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
+				#Foodstamps[q]=M1.FoodStamps
+				#TotInc[q]=M1.Budget
+
 			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
-				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-
-									M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				#M1=M.Budget_Function(s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q]), M.earnings[s,q])
+				if s==1 || s==2 #MN counts SNAP with benefits
+				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				#payment=M1.Welfare
+				else
+					payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+					#payment=M1.Both
+				end
 				Foodstamps[q]=M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
 				TotInc[q] = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
+				#Foodstamps[q]=M1.FoodStamps
+				#TotInc[q]=M1.Budget
 			else
+				#M1=M.Budget_Function(s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q]), M.earnings[s,q]; ageout=1)
 				TotInc[q] = M.budget_ageout[s,q,2,1+convert(Int,L[q])]
+				#TotInc[q]=M1.Budget
 				if s==1 || s==2 # count this as snap for MN, earnings otherwise
 					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 					TotInc[q] = M.budget_ageout[s,q,2,1+convert(Int,L[q])]
+					#payment=M1.Welfare
+					#Foodstamps[q]=M1.FoodStamps
 				else
+					payment = M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
 					Foodstamps[q]=M.budget_ageout[s,q,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])
+					#payment=M1.Both
+					#Foodstamps[q]=M1.FoodStamps
 				end
 			end
 			A2[q] = payment
