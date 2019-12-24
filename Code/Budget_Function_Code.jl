@@ -149,8 +149,8 @@ for i in 1:3
         BS3.YearString=string.(BS3.variable)
         BS3.Year=parse.(Int64, BS3.YearString)
         BS3=BS3[BS3[:, :Year] .>= 1994, :] # fix this for CT later on!!!
-        if i!=1
-        for k in 1:17
+        if j!=1
+        for k in 1:Dev_Years
             for z in 1:4
                 Benefit[i,j,(4*k+z-4)]=BS3.value[k] # I assume this was quarterly?
             end
@@ -222,9 +222,10 @@ function CTJF(q, nk, earnings, eligible,participation; Pov_Guidelines=Poverty, B
         TooRich=1
     end
 
-    Post_disregard=max(earnings-Pov_Guidelines[nk, 1,q],0)
 
-    FoodStamps=participation*(eligible*max(FS-0.3*max((earnings)*TooRich+Ben-134,0),0 )+
+    #FoodStamps=participation*(eligible*max(FS-0.3*max((earnings)*TooRich+Ben-134,0),0 )+(1-eligible)*max(FS-0.3*max(0.8*earnings-134,0),0 ))
+
+    FoodStamps=participation*(eligible*max(FS-0.3*max(TooRich*earnings+Ben-134,0),0 )+
                     (1-eligible)*max(FS-0.3*max(0.8*earnings-134,0),0 ))
 
     Welfare=Ben*participation*(1-TooRich)*eligible
