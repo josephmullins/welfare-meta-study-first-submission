@@ -1,5 +1,5 @@
 # budget matrix
-#cd("/Users/FilipB/github/welfare-meta-study/Code")
+cd("/Users/FilipB/github/welfare-meta-study/Code")
 
 using CSV
 using GLM
@@ -103,7 +103,7 @@ Poverty Cutoff
 
 =#
 
-Poverty=zeros(3,4,Dev_Years*4)# first index is the number of kids, second is site, third is quarter for compatibility
+Poverty=zeros(3,4,Dev_Years*4+1)# first index is the number of kids, second is site, third is quarter for compatibility
 PovGuideline
 for j in 1:4
     #PovGuideline2=PovGuideline[:,(i+1)]
@@ -149,8 +149,8 @@ for i in 1:3
         BS3.YearString=string.(BS3.variable)
         BS3.Year=parse.(Int64, BS3.YearString)
         BS3=BS3[BS3[:, :Year] .>= 1994, :] # fix this for CT later on!!!
-        if i!=1
-        for k in 1:17
+        if j!=1
+        for k in 1:Dev_Years
             for z in 1:4
                 Benefit[i,j,(4*k+z-4)]=BS3.value[k] # I assume this was quarterly?
             end
@@ -171,7 +171,7 @@ for i in 1:3
     end
 end
 Benefit
-
+typeof(Benefit)
 
 # index 1 indicates false, 2 true
 Eligible=[0, 1]
@@ -181,12 +181,170 @@ Program=[0,1]
 
 
 
-# budget(site,arm,NumChild,age0,quarter,eligible,program,work) (NS x NT x 3 x 17 x Q x 2 x 2 x 2)
-budget1=zeros(4,3,3,Dev_Years,Dev_Years*4,2,2,2)
-Foodstamps_receipt=zeros(4,3,3,Dev_Years,Dev_Years*4,2,2,2)
-3*3*3*Dev_Years*Dev_Years*4*2*2*2
-1+1
-println("Checkpoint 3")
+
+function AFDC(q, nk, earnings, eligible,participation,site; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP, SNAP0=SNAP0, ageout=0)
+
+    Ben=0 # reminder that q is date
+    FS=0
+    if ageout==0
+    FS=SNAP[nk,site, q]
+    Ben=Benefit[nk,site,q]
+    else
+    FS=SNAP0[site,q]
+    Ben=0
+    end
+
+    Welfare=participation*(eligible*max(Ben-(1-0.33)*max(earnings-120,0),0))*(1-ageout)
+    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
+    Budget=Welfare+FoodStamps+earnings
+
+    return AFDC=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps)
+
+end
+
+
+
+function CTJF(q, nk, earnings, eligible,participation; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP,SNAP0=SNAP0, ageout=0)
+
+    Ben=0
+    FS=0
+    if ageout==0
+    FS=SNAP[nk,1, q]
+    Ben=Benefit[nk,1,q]
+    else
+    FS=SNAP0[1,q]
+    Ben=0
+    end
+
+    # First I create a 0-1 variable for the income cutoff
+    TooRich=0
+    if earnings>Pov_Guidelines[nk, 1,q]
+        TooRich=1
+    end
+
+
+    #FoodStamps=participation*(eligible*max(FS-0.3*max((earnings)*TooRich+Ben-134,0),0 )+(1-eligible)*max(FS-0.3*max(0.8*earnings-134,0),0 ))
+
+    FoodStamps=participation*(eligible*max(FS-0.3*max(TooRich*earnings+Ben-134,0),0 )+
+                    (1-eligible)*max(FS-0.3*max(0.8*earnings-134,0),0 ))
+
+    Welfare=Ben*participation*(1-TooRich)*eligible
+
+    Budget=earnings+Welfare+FoodStamps
+
+    return CTJF=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, earn=earnings,pov=Pov_Guidelines[nk, 1,q])
+
+end
+
+
+
+function FTP(q, nk, earnings, eligible,participation; Benefit=Benefit, SNAP=SNAP,SNAP0=SNAP0, ageout=0)
+    Ben=0
+    FS=0
+    if ageout==0
+    FS=SNAP[nk,2, q]
+    Ben=Benefit[nk,2,q]
+    else
+    FS=SNAP0[2,q]
+    Ben=0
+    end
+
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
+    Welfare=participation*eligible*max(Ben-0.5*max(earnings-200,0),0)
+    Budget=earnings+Welfare+FoodStamps
+
+    return FTP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps)
+end
+
+function MFIP(q, nk, earnings, eligible,participation,s; Benefit=Benefit, SNAP=SNAP,SNAP0=SNAP0, ageout=0)
+    Ben=0
+    FS=0
+    if ageout==0
+    FS=SNAP[nk,s, q]
+    Ben=Benefit[nk,s,q]
+    else
+    FS=SNAP0[s,q]
+    Ben=0
+    end
+
+
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
+    D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
+    MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+    Welfare=(MFIP-FoodStamps)*eligible
+    Budget=earnings+Welfare+FoodStamps
+
+    return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps)
+end
+
+
+function Budget_Function(s,tr,nk,age0,q,e,p,h, earnings; ageout=0)
+
+    # initialize
+    Budget=0
+    Welfare=0
+    FoodStamps=0
+    numkids=nk
+
+
+    eligible=1
+    if e==1
+        eligible=0
+    end
+    if ageout==1
+        eligible=0
+    end
+    participation=1
+    if p==1
+        participation=0
+    end
+
+    #work=1
+    if h==1
+        earnings=0
+    end
+
+    if tr==1
+            A=AFDC(q, numkids, earnings,eligible,participation, s; ageout=ageout)
+            Budget=A.Budget
+            Welfare=A.Welfare
+            FoodStamps=A.FoodStamps
+    else
+        if s==1
+            C=CTJF(q, numkids, earnings,eligible,participation; ageout=ageout)
+            Budget=C.Budget
+            Welfare=C.Welfare
+            FoodStamps=C.FoodStamps
+        elseif s==2
+            F=FTP(q, numkids, earnings,eligible,participation; ageout=ageout)
+            Budget=F.Budget
+            Welfare=F.Welfare
+            FoodStamps=F.FoodStamps
+        elseif s==3 || s==4
+            M=MFIP(q, numkids, earnings,eligible,participation,s; ageout=ageout)
+            Budget=M.Budget
+            Welfare=M.Welfare
+            FoodStamps=M.FoodStamps
+
+        end
+    end
+
+    Both=Welfare+FoodStamps
+
+
+
+
+    return Output=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, Both=Both)
+
+end
+
+
+
+
+
+
+budget2=zeros(4,3,3,Dev_Years,Dev_Years*4,2,2,2)
+Foodstamps_receipt2=zeros(4,3,3,Dev_Years,Dev_Years*4,2,2,2)
 @time @inbounds @simd for a0 in 1:Dev_Years # outermost loop is for child initial age, 0-17 (shifted by 1-indexing)
     @inbounds @simd    for q in 1:(Dev_Years*4) # next loop is for quarter
     @inbounds @simd         for nk in 1:3 # num kids
@@ -194,42 +352,30 @@ println("Checkpoint 3")
     @inbounds @simd                 for w in 1:2 # working or not
     @inbounds @simd                     for p in 1:2 # program, aka participating or not
     @inbounds @simd                         for site in 1:4 # loop over controls
-                                                AFDC=Eligible[e]*max(Benefit[nk,site,q]-(1-0.33)*max(Earnings[site,q]*Work[w]-120,0),0)
-                                                Foodstamps=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]+AFDC-134,0),0)
-                                                budget1[site,1,nk,a0,q,e,p,w]=Program[p]*(AFDC+Foodstamps)+
-                                                                            Earnings[site,q]*Work[w]
-                                                Foodstamps_receipt[site,1,nk,a0,q,e,p,w]=Foodstamps
-
+                                                A=AFDC(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p],site)
+                                                budget2[site,1,nk,a0,q,e,p,w]=A.Budget
+                                                Foodstamps_receipt2[site,1,nk,a0,q,e,p,w]=deepcopy(A.FoodStamps)
                                 # CTJF treatment
                                 if site==1 # next I fill the treatment arms in one by one
-                                    Too_rich=0
-                                    if Earnings[site,q]>Poverty[nk, site, q] # reminder that first index
-                                        Too_rich=Work[w] # priced out of benefits AND food stamps if you pass a threshold
-                                    end
-                                    Foodstamps_C=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )# I can probably do better than copy-pasting...
-                                    CTJF=(Foodstamps_C+Benefit[nk,1,q])*(1-Too_rich)
-                                    budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(Eligible[e]*(CTJF)+(1-Eligible[e])*(1-Too_rich)*Foodstamps_C)+
-                                                                            Earnings[site,q]*Work[w]
-                                    budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
-                                    Foodstamps_receipt[site,2,nk,a0,q,e,p,w]=Program[p]*((1-Eligible[e])*(1-Too_rich)*Foodstamps_C+Eligible[e]*(1-Too_rich)*SNAP[nk,site, q])
-                                    Foodstamps_receipt[site,3,nk,a0,q,e,p,w]=Foodstamps_receipt[site,2,nk,a0,q,e,p,w]
+                                    C=CTJF(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p])
+                                    budget2[site,2,nk,a0,q,e,p,w]=C.Budget
+                                    budget2[site,3,nk,a0,q,e,p,w]=C.Budget
+                                    Foodstamps_receipt2[site,2,nk,a0,q,e,p,w]=C.FoodStamps
+                                    Foodstamps_receipt2[site,3,nk,a0,q,e,p,w]=C.FoodStamps
                                 # FTP treatment
                                 elseif site==2
-                                Foodstamps_F=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
-                                FTP=max(Benefit[nk,site,q]-0.5*max(Earnings[site,q]*Work[w]-200,0),0)
-                                budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(FTP*Eligible[e]+Foodstamps_F)+
-                                                                            Earnings[site,q]*Work[w]
-                                budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
-                                Foodstamps_receipt[site,2,nk,a0,q,e,p,w]=Program[p]*Foodstamps_F
-                                Foodstamps_receipt[site,3,nk,a0,q,e,p,w]=Foodstamps_receipt[site,2,nk,a0,q,e,p,w]
+                                    F=FTP(q, nk, Earnings[site,q]*Work[w],Eligible[e],Program[p])
+
+                                budget2[site,2,nk,a0,q,e,p,w]=F.Budget
+                                budget2[site,3,nk,a0,q,e,p,w]=F.Budget
+                                Foodstamps_receipt2[site,2,nk,a0,q,e,p,w]=F.FoodStamps
+                                Foodstamps_receipt2[site,3,nk,a0,q,e,p,w]=F.FoodStamps
                             elseif site==3 || site==4
                             # MFIP treatment
-                                Foodstamps_M=max(SNAP[nk,site, q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0 )
-                                D=Benefit[nk,site,q]+Foodstamps_M # notice the deviation from the formula in the document
-                                MFIP=max( min(1.2*D-(1-0.38)*Earnings[site,q]*Work[w],D)  ,0)
-                                budget1[site,2,nk,a0,q,e,p,w]=Program[p]*(MFIP*Eligible[e]+(1-Eligible[e])*Foodstamps_M)+
-                                                                            Earnings[site,q]*Work[w]
-                                budget1[site,3,nk,a0,q,e,p,w]=budget1[site,2,nk,a0,q,e,p,w]
+                                M=MFIP(q, nk, Earnings[site,q]*Work[w],Eligible[e],Program[p],site)
+
+                                budget2[site,2,nk,a0,q,e,p,w]=M.Budget
+                                budget2[site,3,nk,a0,q,e,p,w]=M.Budget
                             end
                         end # end site loop
 
@@ -239,34 +385,37 @@ println("Checkpoint 3")
         end
     end
 end
-#budget1=budget1.+0.0000001
-#minimum(budget1)
-#findmax(budget1[:,3,:,:,:,:,:,:])
+budget2
 
-Budget_Ageout=zeros(4,Dev_Years*4+1,2,2)
-Foodstamps_receipt_ageout=zeros(4,Dev_Years*4+1,2,2)
+
+
+
+
+
+Budget_Ageout2=zeros(4,Dev_Years*4+1,2,2)
+
 @time @inbounds @simd for site in 1:4
     @inbounds @simd     for q in 1:(Dev_Years*4+1)
     @inbounds @simd         for w in 1:2
     @inbounds @simd             for p in 1:2
-                        Budget_Ageout[site,q,p,w]=Earnings[site,q]*Work[w]+Program[p]*max(SNAP0[site,q]-0.3*max(0.8*Earnings[site,q]*Work[w]-134,0),0)
+                        Budget_Ageout2[site,q,p,w]=AFDC(q, 1, Earnings[site,q]*Work[w],0,Program[p], site; ageout=1).Budget
 
             end
         end
     end
 end
-#Budget_Ageout
-#Budget_Ageout=Budget_Ageout.+0.000001
 
-budget1 *= 3
-Budget_Ageout *= 3
-Earnings *= 3
-Foodstamps_receipt *=3
 
-writedlm("budget",budget1)
-writedlm("budget_ageout",Budget_Ageout)
+budget2 *= 3
+Budget_Ageout2 *= 3
+Earnings *=3
+Foodstamps_receipt2 *=3
+
+
+writedlm("budget",budget2)
+writedlm("budget_ageout",Budget_Ageout2)
 writedlm("earnings",Earnings)
-writedlm("foodstamps_receipt",Foodstamps_receipt)
+writedlm("foodstamps_receipt",Foodstamps_receipt2)
 TimeLimit_Ind=[false true true; false true true; false false false]
 
 TimeLimits=[0 7 7; 0 8 8; 0 0 0]
