@@ -1,8 +1,11 @@
 using DataFrames
 using PyPlot
 using Revise
+using ForwardDiff
+using Optim
 include("BaselineModel.jl")
 includet("EstimationRoutines.jl")
+includet("Budget_Function_Code.jl")
 using DelimitedFiles
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 
@@ -161,10 +164,30 @@ vlist = [:αc,:αθ,:αH,:αA,:β,:σA,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 Criterion(x0,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 @time Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 
+function pars_to_criterion(x2)
+    return Criterion(x2,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
+
+end
+
+pars_to_criterion(x1)
+
+
+
+x1=pars_to_vec(pars)
+Criterion(x0,pars,Mod1,vlist,moms0,wghts_Full,5,lengths,TE_index, true, true)
+
+Criterion(x1,pars,Mod1,vlist,moms0,wghts_Full,5,lengths,TE_index, true, true)
+
+
+
+#ForwardDiff.gradient(pars_to_criterion,x1)
+
+# automatic differentiation with dual numbers does not work due to type issue--is this fixable?
+
 println("Just getting Labor Parameters")
 
 opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 200,LBFGS = 1)
-res = optimize(opt,x0)
+res = NLopt.optimize(opt,x0)
 
 
 
@@ -172,15 +195,21 @@ res = optimize(opt,x0)
 # finally let's polish off with a local optimizer or two
 
 opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000,SBPLX = 1)
-res2 = optimize(opt,x0)
+res2 = NLopt.optimize(opt,x0)
 
 opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000)
-res3 = optimize(opt,x0)
+res3 = NLopt.optimize(opt,x0)
 
 # OK, Nelder-Mead seemed to do better than Subplex here, and it didn't seem like it was done optimizing.
 
 opt,x0 = GetOptimization(pars,Mod1,labor_block,moms0,wghts_labor,5,lengths,TE_index,maxevals = 1000)
-res4 = optimize(opt,x0)
+res4 = NLopt.optimize(opt,x0)
+
+# the other nelder mead code is helpful as I can control the simplex
+# but it doesn't support bounds and should only be used for polishing
+
+A=Optim.optimize(pars_to_criterion,x1,NelderMead(;initial_simplex=Optim.AffineSimplexer(0.0, 0.01)), Optim.Options(iterations=200))
+
 
 # Next let's check and store the pars
 
