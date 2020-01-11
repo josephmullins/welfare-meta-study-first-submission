@@ -108,10 +108,10 @@ end
 
 
 function GetRecursiveCoefficient!(M)
-	Q = 18*4+1
-	M.Γδ[18*4+1] = 1/(1-M.β)
+	Q = 18+1
+	M.Γδ[18+1] = 1/(1-M.β)
 	for q=Q-1:-1:1
-		Age_Year=convert(Int,ceil(q/4))
+		Age_Year=q#convert(Int,ceil(q/4))
 		M.Γδ[q] = 1 + M.β*M.δθ[Age_Year]*M.Γδ[q+1]
 	end
 end
@@ -120,11 +120,11 @@ end
 	#<- thought: only impact of # kids is on benefits, but should we maybe include something in alphaV?
 function CalculateUtilities!(M)
 	# first get recursive coefficient
-	Q = 18*4+1
+	Q = 18+1
 	for s=1:length(M.αH),tr=1:3,nk=1:3,age0=1:18,q=1:Q
-		age = age0*4+q
+		age = age0+q
 		if age<Q
-			Age_Year=convert(Int,ceil(q/4))
+			Age_Year=q#convert(Int,ceil(q/4))
 			αV = M.αθ*M.δI[Age_Year]*M.β*M.Γδ[q+1]
 			if M.TL[s,tr]
 				for wu=1:M.TLmax[s,tr]
@@ -173,7 +173,7 @@ end
 # this function takes utility calculations and calculates work choice probabilities, as well as expected utilities for program participation choices
 function SolveWorkProb!(M::Model)
 	for s=1:4,tr=1:3,nk=1:3,age0=1:18,q=1:(length(M.δI)+1)
-		qT = (18-age0)*4
+		qT = (18-age0)
 		if M.TL[s,tr] & (q<=qT)
 			for wu = 1:M.TLmax[s,tr]+1
 				for p=1:2
@@ -198,13 +198,13 @@ end
 # let's assume we don't need values further than for probabilities
 # this model solves for welfare choice probabilities
 function SolveModel!(M::Model,s,tr,nk,age0)
-	Q = 18*4 + 1
+	Q = 18 + 1
 	# first solve terminal period values (improve this for choice probs, etc)
 	#M.V[s,tr,nk,age0,Q,:] .= log.(sum(exp.(M.utility[s,tr,nk,age0,Q,:,:])))
 	# terminal period for eligibility:
-	qT = (18-age0)*4
+	qT = (18-age0)
 	for q=Q-1:-1:1
-		age = age0 + min(q-1,4)# this was floor--should it not be min as both are ints?
+		age = age0 + q#min(q-1,4)# this was floor--should it not be min as both are ints?
 		if M.TL[s,tr] & (q<=qT)
 			for wu = 1:M.TLmax[s,tr]+1
 				# an efficiency gain here, potentially
@@ -226,7 +226,7 @@ end
 
 
 function initialize_model()
-	Mod1=Model(4,3,18,budget1,Budget_Ageout,18*4,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind,Foodstamps_receipt, Budget_Function)
+	Mod1=Model(4,3,18,budget1,Budget_Ageout,18,Earnings,TimeLimit_Ind,TimeLimits,τ, Work_Reqs_Ind,Foodstamps_receipt, Budget_Function)
 	GetRecursiveCoefficient!(Mod1)
 	CalculateUtilities!(Mod1)
 	SolveWorkProb!(Mod1)
@@ -293,13 +293,14 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 	Xc = zeros(Q)
 	Foodstamps=zeros(Q)
 	TotInc = zeros(Q)
-	age = age0*4 #<- convert age to quarterly number
-	if age==0
-		age=1 # I don't want to worry about 1-indexing
-	end
+	#age = age0*4 #<- convert age to quarterly number
+	age=age0+1 # 1 indexing!
+	#if age==0
+	#	age=1 # I don't want to worry about 1-indexing
+	#end
 	wu = 1 # changed it to 1 here
 	for q=1:Q
-		Age_Year=convert(Int,ceil(q/4))
+		Age_Year=age #convert(Int,ceil(q/4))
 		welf = rand()<M.welf_prob[s,tr,nk,age0+1,q,wu] #<- no heterogeneity here
 		L[q] = rand()<M.work_prob[s,tr,nk,age0+1,q,wu,1+welf] #
 		Y[q] = L[q]*M.earnings[s,q] #<-
@@ -309,7 +310,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 		end
 		if welf
 			payment=0
-			if age<=18*4 && Elig==1
+			if age<=18 && Elig==1
 				#M1=M.Budget_Function(s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q]), M.earnings[s,q])
 				if s==1 || s==2 #MN counts SNAP with benefits
 				payment = M.budget[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-M.SNAP[s,tr,nk,age0+1,q,2,2,1+convert(Int,L[q])]
@@ -323,7 +324,7 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 				#Foodstamps[q]=M1.FoodStamps
 				#TotInc[q]=M1.Budget
 
-			elseif age<=18*4 && Elig==0 # switch index to 1 if no longer eligible
+			elseif age<=18 && Elig==0 # switch index to 1 if no longer eligible
 				#M1=M.Budget_Function(s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q]), M.earnings[s,q])
 				if s==1 || s==2 #MN counts SNAP with benefits
 				payment = M.budget[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]-(M.earnings[s,q]*L[q])-M.SNAP[s,tr,nk,age0+1,q,1,2,1+convert(Int,L[q])]
@@ -359,10 +360,16 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 
 		inc = Y[q] + A2[q]
 		h = 30*L[q]
-		if age<=18*4
+		if age<=18
 			pc = M.pc[Age_Year]*(1-M.τ[s,tr])
 			ϵ = M.ϵ[Age_Year]
 			Xc[q] = h*pc^(1-ϵ)/(112 -h + h*pc^(1-ϵ))*inc
+			if inc + M.wq*(112-h)<0
+				println("error1, h is ",h,", inc is ",inc, ", A2 is ",A2[q])
+				println(Y[q], " ", A2[q], ", ", age)
+			elseif 112-h + h*pc^(1-ϵ)<0
+				println("error2")
+			end
 			θ[q+1] = M.δI[Age_Year]*log(inc + M.wq*(112-h)) - 1/(1-ϵ)* M.δI[Age_Year]*log(112-h + h*pc^(1-ϵ)) + M.δθ[Age_Year]*θ[q]
 		else
 			θ[q+1] = θ[q]
@@ -372,10 +379,10 @@ function Simulate(M::Model,Q,s,tr,nk,age0)
 
 		age += 1
 		if M.TL[s,tr]
-			A[q] = (age<=18*4)*(wu<M.TLmax[s,tr]+1)*(A2[q]>0)
+			A[q] = (age<=18)*(wu<M.TLmax[s,tr]+1)*(A2[q]>0)
 			wu = min(wu+welf,M.TLmax[s,tr]+1) # I think this should be min not max?
 		else
-			A[q] = (age<=18*4)*(A2[q]>0)
+			A[q] = (age<=18)*(A2[q]>0)
 		end
 
 	end
@@ -442,11 +449,11 @@ function MomentsBaseline(M::Model,R,lengths,TE_index)
 			A[curr_slice] = mean(dat.Participation,dims=2)
 			A2[curr_slice] = mean(dat.Benefit_Receipt,dims=2)
 			Y[curr_slice] = mean(dat.TotInc,dims=2)
-			θ[i,j,1:simsize[i]] = dat.Skills[year_meas[i]*4,:]
-			AGE[i,j,1:simsize[i]] = dat.AGE[year_meas[i]*4,:]
+			θ[i,j,1:simsize[i]] = dat.Skills[year_meas[i],:]
+			AGE[i,j,1:simsize[i]] = dat.AGE[year_meas[i],:]
 			if j<=2
 				τ = Mod1.τ[i,j]
-				XG[i,j] = τ/(1-τ)*mean(dat.Childcare[1:years_childcare[i]*4,:])*4 #<- annual
+				XG[i,j] = τ/(1-τ)*mean(dat.Childcare[1:years_childcare[i],:]) #<- annual
 			end
 			curr_pos += lengths[i]
 		end
