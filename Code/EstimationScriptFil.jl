@@ -3,16 +3,19 @@ using PyPlot
 using Revise
 using ForwardDiff
 using Optim
-include("BaselineModel.jl")
+using DataFramesMeta
+using StatsBase
+using Dates
+includet("BaselineModel.jl")
 includet("EstimationRoutines.jl")
 includet("Budget_Function_Code.jl")
 using DelimitedFiles
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 
-Earnings = reshape(readdlm("earnings"),4,73)
-budget1 = reshape(readdlm("budget"),4,3,3,18,18*4,2,2,2)
-Budget_Ageout = reshape(readdlm("budget_ageout"),4,73,2,2)
-Foodstamps_receipt=reshape(readdlm("foodstamps_receipt"),4,3,3,18,18*4,2,2,2)
+Earnings = reshape(readdlm("earnings"),6,19)
+budget1 = reshape(readdlm("budget"),4,3,3,18,18,2,2,2)
+Budget_Ageout = reshape(readdlm("budget_ageout"),4,19,2,2)
+Foodstamps_receipt=reshape(readdlm("foodstamps_receipt"),4,3,3,18,18,2,2,2)
 #findmax(budget1[:,3,:,:,:,:,:,:])
 TE_moms = CSV.read("../Data/ChildTreatmentEffectsScore.csv")[1:16,:]
 TE_moms[:Site] = [ones(2);2*ones(2);3*ones(7);4*ones(5)]
@@ -20,7 +23,29 @@ TE_index = convert(Array{Int64,2},TE_moms[:,[:Site,:Treatment,:AgeMin,:AgeMax]])
 TE_moms0 = convert(Array{Float64,1},TE_moms.FacScore)
 N_control = convert(Array{Float64,1},TE_moms.N_control)
 
+
+CPI = CSV.read("../Data/CPIAUCSL.csv")
+CPI[!,:Year].=Dates.year.(CPI.DATE)
+
 Q_moms = CSV.read("../Data/QuarterlyMoms.csv")
+
+Q_moms2=join(Q_moms,CPI,on=:Year, kind=:left)
+
+Q_moms2.CPIAUCSL
+
+Q_moms=by(Q_moms,
+            [:Year,:Site,:Treatment],
+            [:LFP, :Participation,:Receipt,:TotInc]=>
+            x->(LFP=mean(x.LFP),  Participation=mean(x.Participation), Receipt=mean(x.Receipt)*4 ,
+            TotInc=mean(x.TotInc)*4 )      )
+
+
+treatment=@where(Q_moms,:Treatment.==0)
+yearcount=@select(treatment,:Year,:Site)
+unique(yearcount)
+countmap(yearcount.Site)
+
+
 E_mom = convert(Array{Float64,1},Q_moms.LFP)/100
 A_mom = convert(Array{Float64,1},Q_moms.Participation)/100
 A2_mom = convert(Array{Float64,1},Q_moms.Receipt)
@@ -28,16 +53,19 @@ Y_mom = convert(Array{Float64,1},Q_moms.TotInc)
 
 τ = 0.1*ones(4,3)
 XG0 = [1082.75 1351.5; 94.33 200.25; 857.67 1089.67] #<- average subsidy expense for each program
-XGm = XG0/12 #<- monthly
-Xcm = [57.3 71;21. 20] #<- monthly payment from CTJF and FTP members
+XGm = XG0 # no longer  monthly
+Xcm = [57.3 71;21. 20].*12 #<- annualized monthly payment from CTJF and FTP members
 τ[1:2,1:2] = XGm[1:2,:]./(XGm[1:2,:] .+ Xcm)
 XGmom = [(XG0[:,2] .- XG0[:,1])./XG0[:,1]; XG0[3,1]/XG0[1,1]]
 
 TimeLimit_Ind=[false true true; false true true; false false false; false false false]
 
-TimeLimits=[0 7 7; 0 8 8; 0 0 0; 0 0 0]
-lengths = [16,18,12,12]
-Work_Reqs_Ind=[false true true; false true true; false true false;false true false];
+#TimeLimits=[0 7 7; 0 8 8; 0 0 0; 0 0 0]
+#lengths = [16,18,12,12]
+TimeLimits=[0 2 2; 0 2 2; 0 0 0; 0 0 0]
+lengths = [4,5,4,4]
+
+Work_Reqs_Ind=[false true true; false true true; false true false;false true false]
 
 
 # set up the model
@@ -95,7 +123,7 @@ Par1=Par1[:,2]
 τ =  [0.5,0.7]
 #pc = [1.5,0.]
 pc =  [3.]
-wq =  3. *12
+wq =  3. *12*4
 αWR =  0.5
 np = (αc = 4, αθ = 1, αH = 4, αA = 4, β = 1, σA = 1, δI = 2, δθ = 1, ϵ = 1, τ = 2, pc = 1, wq = 1, αWR = 1)
 lb = (αc = zeros(4), αθ = 0, αH = -Inf*ones(4),αA = -Inf*ones(4),β = 0.4, σA = 0.01, δI = [-5,-0.2],δθ = 0, ϵ = 0,τ = zeros(2),pc = [0.],wq = 0.1, αWR = 0)
@@ -161,6 +189,18 @@ labor_block2 = [:αc,:αH,:αA,:β,:αWR] #<- ok, I wonder if there's a better w
 TE_block = [:δI,:δθ,:ϵ,:pc]
 vlist = [:αc,:αθ,:αH,:αA,:β,:σA,:δI,:δθ,:ϵ,:τ,:pc,:wq,:αWR]
 
+
+sample_size = [4803,1405+1410,3208,6009]
+simsize = 5*sample_size
+xa=Simulate(Mod1,simsize[1],lengths[1],1,1)
+xa.Skills
+
+E,A,A2,XG,skill,Y=MomentsBaseline(Mod1, 5,lengths,TE_index)
+
+E_mom
+mom_sim = [E;A;A2;XG;skill;Y]
+moms0
+
 Criterion(x0,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 @time Criterion(x1,pars,Mod1,vlist,moms0,wghts_labor,5,lengths,TE_index, true, true)
 
@@ -207,7 +247,7 @@ res4 = NLopt.optimize(opt,x0)
 
 # the other nelder mead code is helpful as I can control the simplex
 # but it doesn't support bounds and should only be used for polishing
-
+x1=pars_to_vec(pars)
 A=Optim.optimize(pars_to_criterion,x1,NelderMead(;initial_simplex=Optim.AffineSimplexer(0.0, 0.01)), Optim.Options(iterations=200))
 
 
