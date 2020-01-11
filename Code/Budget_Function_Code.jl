@@ -26,7 +26,28 @@ SNAPRules=CSV.read("../Data/WelfareRules/SNAPRules.csv")
 CPI = CSV.read("../Data/CPIAUCSL.csv")
 CPI[!,:year].=Dates.year.(CPI.DATE)
 CPI[!,:Year].=Dates.year.(CPI.DATE)
+Ninetyone=@where(CPI,:Year.==1991)
 
+Annualized_Data=join(Annualized_Data,CPI, on=:Year)
+
+Annualized_Data[!,:CPI].=Annualized_Data.CPIAUCSL./Ninetyone.CPIAUCSL[1]
+
+CSV.write("../Data/Annualized_Data.csv",Annualized_Data)
+
+
+Q_moms = CSV.read("../Data/QuarterlyMoms.csv")
+Q_moms=by(Q_moms,
+            [:Year,:Site,:Treatment],
+            [:LFP, :Participation,:Receipt,:TotInc]=>
+            x->(LFP=mean(x.LFP),  Participation=mean(x.Participation), Receipt=mean(x.Receipt)*4 ,
+            TotInc=mean(x.TotInc)*4 )      )
+
+Q_moms2=join(Q_moms,CPI,on=:Year, kind=:left)
+Q_moms2[!,:CPI].=Q_moms2.CPIAUCSL./Ninetyone.CPIAUCSL[1]
+
+CSV.write("../Data/Annualized_Moments.csv",Q_moms2)
+
+println("Checkpoint 1")
 
 #PovGuideline2=join(PovGuideline,CPI,on=:year, kind=:left)
 #SNAPRules2=join(SNAPRules,CPI,on=:year, kind=:left)
@@ -43,7 +64,7 @@ I observe the following rules:
     There are 17*4=68 quarters
 
 =#
-println("Checkpoint 1")
+
 
 Dev_Years=18
 
@@ -367,18 +388,18 @@ end
 
 
 
+sites_considered=[1 2 3 4 6 7]
 
 
-
-budget2=zeros(4,3,3,Dev_Years,Dev_Years,2,2,2) # site, arm, nk, a0, year/quarter, eligible, participating, working
-Foodstamps_receipt2=zeros(4,3,3,Dev_Years,Dev_Years,2,2,2) # see above
+budget2=zeros(7,3,3,Dev_Years,Dev_Years,2,2,2) # site, arm, nk, a0, year/quarter, eligible, participating, working
+Foodstamps_receipt2=zeros(7,3,3,Dev_Years,Dev_Years,2,2,2) # see above
 @time @inbounds @simd for a0 in 1:Dev_Years # outermost loop is for child initial age, 0-17 (shifted by 1-indexing)
     @inbounds @simd    for q in 1:(Dev_Years) # next loop is for year (was quarter)
     @inbounds @simd         for nk in 1:3 # num kids
     @inbounds @simd             for e in 1:2 # eligible or not
     @inbounds @simd                 for w in 1:2 # working or not
     @inbounds @simd                     for p in 1:2 # program, aka participating or not
-    @inbounds @simd                         for site in 1:4 # loop over controls
+    @inbounds @simd                         for site in sites_considered # loop over controls
                                                 A=AFDC(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p],site)
                                                 budget2[site,1,nk,a0,q,e,p,w]=A.Budget
                                                 Foodstamps_receipt2[site,1,nk,a0,q,e,p,w]=deepcopy(A.FoodStamps)
@@ -403,6 +424,12 @@ Foodstamps_receipt2=zeros(4,3,3,Dev_Years,Dev_Years,2,2,2) # see above
 
                                 budget2[site,2,nk,a0,q,e,p,w]=M.Budget
                                 budget2[site,3,nk,a0,q,e,p,w]=M.Budget
+
+                            else
+                                A=AFDC(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p],site)
+                                budget2[site,1,nk,a0,q,e,p,w]=A.Budget
+                                Foodstamps_receipt2[site,1,nk,a0,q,e,p,w]=deepcopy(A.FoodStamps)
+
                             end
                         end # end site loop
 
@@ -419,9 +446,9 @@ budget2
 
 
 
-Budget_Ageout2=zeros(4,Dev_Years+1,2,2)
+Budget_Ageout2=zeros(7,Dev_Years+1,2,2)
 
-@time @inbounds @simd for site in 1:4
+@time @inbounds @simd for site in sites_considered
     @inbounds @simd     for q in 1:(Dev_Years+1) # this is year now
     @inbounds @simd         for w in 1:2
     @inbounds @simd             for p in 1:2

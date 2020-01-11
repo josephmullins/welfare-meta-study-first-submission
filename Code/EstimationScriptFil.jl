@@ -13,9 +13,9 @@ using DelimitedFiles
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 
 Earnings = reshape(readdlm("earnings"),6,19)
-budget1 = reshape(readdlm("budget"),4,3,3,18,18,2,2,2)
-Budget_Ageout = reshape(readdlm("budget_ageout"),4,19,2,2)
-Foodstamps_receipt=reshape(readdlm("foodstamps_receipt"),4,3,3,18,18,2,2,2)
+budget1 = reshape(readdlm("budget"),7,3,3,18,18,2,2,2)
+Budget_Ageout = reshape(readdlm("budget_ageout"),7,19,2,2)
+Foodstamps_receipt=reshape(readdlm("foodstamps_receipt"),7,3,3,18,18,2,2,2)
 #findmax(budget1[:,3,:,:,:,:,:,:])
 TE_moms = CSV.read("../Data/ChildTreatmentEffectsScore.csv")[1:16,:]
 TE_moms[:Site] = [ones(2);2*ones(2);3*ones(7);4*ones(5)]
