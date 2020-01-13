@@ -1,6 +1,4 @@
 # for now we're going to assume annual frequency (for simplicity)
-# add family size
-using ForwardDiff
 
 # this function calculates the choice probabilities, and produces the Emax function
 function ChoiceProb(pars,Y,price,nk,age,CV,WR)
@@ -54,16 +52,16 @@ function GetAggMoments(pA,pWork,π0)
 	T = size(pA)[1]
 	NK = size(pA)[2]
 	EA = zeros(T)
-	EW = zeros(T)
+	EH = zeros(T)
 	for t=1:T
 		for a0 = 0:16
 			for nk=1:NK
 				EA[t] += π0[nk,a0+1]*pA[t,a0+1]
-				EW[t] += π0[nk,a0+1]*(pWork[t,a0+1,1] + pA[t,a0+1]*(pWork[t,a0+1,2]-pWork[t,a0+1,1])
+				EH[t] += π0[nk,a0+1]*(pWork[t,a0+1,1] + pA[t,a0+1]*(pWork[t,a0+1,2]-pWork[t,a0+1,1]))
 			end
 		end
 	end
-	return EA,EW
+	return EA,EH
 end
 
 # what's available?
