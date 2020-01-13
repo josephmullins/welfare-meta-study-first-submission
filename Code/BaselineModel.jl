@@ -1,5 +1,6 @@
 # for now we're going to assume annual frequency (for simplicity)
 # add family size
+using ForwardDiff
 
 # this function calculates the choice probabilities, and produces the Emax function
 function ChoiceProb(pars,Y,price,nk,age,CV,WR)
