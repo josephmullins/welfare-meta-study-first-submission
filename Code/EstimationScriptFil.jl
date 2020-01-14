@@ -6,13 +6,13 @@ using Optim
 using DataFramesMeta
 using StatsBase
 using Dates
-includet("BaselineModel.jl")
+includet("FB_BaselineModel_older.jl")
 includet("EstimationRoutines.jl")
 includet("Budget_Function_Code.jl")
 using DelimitedFiles
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 
-Earnings = reshape(readdlm("earnings"),6,19)
+Earnings = reshape(readdlm("earnings"),7,19)
 budget1 = reshape(readdlm("budget"),7,3,3,18,18,2,2,2)
 Budget_Ageout = reshape(readdlm("budget_ageout"),7,19,2,2)
 Foodstamps_receipt=reshape(readdlm("foodstamps_receipt"),7,3,3,18,18,2,2,2)

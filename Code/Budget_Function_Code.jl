@@ -5,47 +5,67 @@ using CSV
 using GLM
 using DataFrames
 using DelimitedFiles
-budget1=Array{Float64,8}# budget(site,arm,NumChild,age0,quarter,program,work, eligible) (NS x NT x 3 x 17 x Q x 2 x 2 x 2)
 
-Quarterly_Data=CSV.read("../Data/QuarterlyData.csv")
 
-Annualized_Data=by(Quarterly_Data,
-            [:Year,:Site,:Treatment],
-            [:LFP, :Earnings,:Welfare,:Receipt,:FoodStamps]=>
-            x->(LFP=mean(x.LFP),  Earnings=mean(x.Earnings)*4, Welfare=mean(x.Welfare) ,
-            Receipt=mean(x.Receipt)*4,FoodStamps=mean(x.FoodStamps)  )      )
 
-Annualized_Data[!,:Imputed_Earnings].=Annualized_Data.Earnings./(0.01.*Annualized_Data.LFP)
-
-BenStd=CSV.read("../Data/WelfareRules/BenStd.csv")
-
-PovGuideline=CSV.read("../Data/WelfareRules/PovGuideline.csv")
-
-SNAPRules=CSV.read("../Data/WelfareRules/SNAPRules.csv")
-
+# Import CPI
 CPI = CSV.read("../Data/CPIAUCSL.csv")
 CPI[!,:year].=Dates.year.(CPI.DATE)
 CPI[!,:Year].=Dates.year.(CPI.DATE)
 Ninetyone=@where(CPI,:Year.==1991)
 
+
+# Lump everything into annualized data
+    # Data
+Quarterly_Data=CSV.read("../Data/QuarterlyData_Extended.csv")
+Annualized_Data=by(Quarterly_Data,
+            [:Year,:Site,:Treatment_Num],
+            [:LFP, :Earnings,:Welfare,:Receipt,:FoodStamps,:NEWWS,:Treatment_Num,:TotInc]=>
+            x->(LFP=mean(x.LFP),  Earnings=mean(x.Earnings)*4, Welfare=mean(x.Welfare) ,
+            Receipt=mean(x.Receipt)*4,FoodStamps=mean(x.FoodStamps),
+            TotInc=mean(x.TotInc)*4,
+            NEWWS=mean(x.NEWWS),  Treatment_Num=mean(x.Treatment_Num)  )      )
+Annualized_Data.Treatment_Num
+
+# but NEWSS was recorded annually
+Annualized_Data[!,:Treatment].="Control"
+@with Annualized_Data begin
+    Annualized_Data.Earnings.=ifelse.((:NEWWS.==0.00), :Earnings, :Earnings./4)
+    Annualized_Data.Receipt.=ifelse.((:NEWWS.==0.00), :Receipt, :Receipt./4)
+    Annualized_Data.TotInc.=ifelse.((:NEWWS.==0.00), :TotInc, :TotInc./4)
+
+    Annualized_Data.Treatment.=ifelse.((:Treatment_Num.!=0), "Treatment", "Control")
+
+end
+
+
+Annualized_Data[!,:Imputed_Earnings].=Annualized_Data.Earnings./(0.01.*Annualized_Data.LFP)
 Annualized_Data=join(Annualized_Data,CPI, on=:Year)
-
 Annualized_Data[!,:CPI].=Annualized_Data.CPIAUCSL./Ninetyone.CPIAUCSL[1]
-
 CSV.write("../Data/Annualized_Data.csv",Annualized_Data)
+    # Moments
+#Q_moms = CSV.read("../Data/QuarterlyMoms.csv")
+
+#Q_moms=by(Q_moms,
+#                [:Year,:Site,:Treatment],
+#                [:LFP, :Participation,:Receipt,:TotInc]=>
+#                x->(LFP=mean(x.LFP),  Participation=mean(x.Participation), Receipt=mean(x.Receipt)*4 ,
+#                TotInc=mean(x.TotInc)*4 )      )
+
+A_moms=@select(Annualized_Data,:Year,:Site,:Treatment_Num,:LFP,:Earnings,:Welfare,:Receipt,:FoodStamps,:CPI,:TotInc)
+A_moms=rename(A_moms,:Treatment_Num=>:Treatment, :Welfare=>:Participation)
+A_moms=unique(A_moms)
+CSV.write("../Data/Annualized_Moments.csv",A_moms)
 
 
-Q_moms = CSV.read("../Data/QuarterlyMoms.csv")
-Q_moms=by(Q_moms,
-            [:Year,:Site,:Treatment],
-            [:LFP, :Participation,:Receipt,:TotInc]=>
-            x->(LFP=mean(x.LFP),  Participation=mean(x.Participation), Receipt=mean(x.Receipt)*4 ,
-            TotInc=mean(x.TotInc)*4 )      )
+# Guidelines
+BenStd=CSV.read("../Data/WelfareRules/BenStd.csv")
+PovGuideline=CSV.read("../Data/WelfareRules/PovGuideline.csv")
+SNAPRules=CSV.read("../Data/WelfareRules/SNAPRules.csv")
+CaliRules=CSV.read("../Data/WelfareRules/CaliforniaBenefitRules.csv")
 
-Q_moms2=join(Q_moms,CPI,on=:Year, kind=:left)
-Q_moms2[!,:CPI].=Q_moms2.CPIAUCSL./Ninetyone.CPIAUCSL[1]
 
-CSV.write("../Data/Annualized_Moments.csv",Q_moms2)
+
 
 println("Checkpoint 1")
 
@@ -68,9 +88,11 @@ I observe the following rules:
 
 Dev_Years=18
 
-budget1=zeros(7,3,3,Dev_Years,Dev_Years,2,2,2)
+site=["CTJF" "FTP" "MFIP-LR" "MFIP-RA" "LA-GAIN" "LFA-Atlanta" "LFA-GR"]
+Program_Lengths=[4,5,4,4,2,2,2] # note: needs to be the number of CALENDAR YEARS
 
-site=["CTJF" "FTP" "MFIP-LR-F" "MFIP-R-F" "LA-GAIN" "LFA-Atlanta" "LFA-GR"]
+Control = Annualized_Data[Annualized_Data[:, :Site] .== site[1], :]
+First_Year=(minimum(Control.Year))
 
 
 # I store the first year I observed a program. This will come in handy later.
@@ -97,7 +119,6 @@ for i in 1:7
     end
 end
 
-(Earnings)
 
 #=
 
@@ -113,9 +134,7 @@ for i in 1:3
     for j in 1:7
         SNAPRulesC2 = SNAPRulesC[SNAPRulesC[:, :year] .>= First_Year[j], :]
             for k in 1:Dev_Years
-
                 SNAP[i,j,k]=SNAPRulesC2.MA[k]*12
-
             end
     end
 end
@@ -125,14 +144,10 @@ end
 SnapRules_0=SNAPRules[SNAPRules[:, :NumChild] .== 0, :]
 SNAP0=zeros(7,Dev_Years+1)
 for i in 1:7
-
     SnapRules_02 = SnapRules_0[SnapRules_0[:, :year] .>= First_Year[i], :]
             for k in 1:19
-                #for z in 1:4
                     SNAP0[i,k]=SnapRules_02.MA[k]*12
-                #end
             end
-            #SNAP0[i,73]=SnapRules_02.MA[19] # one more year for parents with aged-out kids
 end
 
 
@@ -252,6 +267,31 @@ end
 
 
 
+
+
+function AFDC_MN(q, nk, earnings, eligible,participation,site; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP, SNAP0=SNAP0, ageout=0)
+
+    Ben=0 # reminder that q is date
+    FS=0
+    if ageout==0
+    FS=SNAP[nk,site, q]
+    Ben=Benefit[nk,site,q]
+    else
+    FS=SNAP0[site,q]
+    Ben=0
+    end
+
+    Welfare=participation*(eligible*max((Ben-FS)-(1-0.33)*max(earnings-120,0),0))*(1-ageout)
+    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
+    Budget=Welfare+FoodStamps+earnings
+
+    Error=Budget-earnings
+
+    return AFDC=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps,Error=Error)
+
+end
+
+
 function CTJF(q, nk, earnings, eligible,participation; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP,SNAP0=SNAP0, ageout=0)
 
     Ben=0
@@ -316,14 +356,56 @@ function MFIP(q, nk, earnings, eligible,participation,s; Benefit=Benefit, SNAP=S
     end
 
 
-    FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
-    D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
-    MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-    Welfare=(MFIP-FoodStamps)*eligible
-    Budget=earnings+Welfare+FoodStamps
+    #FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
+    #D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
+    #MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+    #Welfare=(MFIP-FoodStamps)*eligible
+    #Budget=earnings+Welfare+FoodStamps
+
+    Welfare=eligible*participation*
+                max(min(1.2*Ben-(1-0.38)*earnings,Ben),0)
+    Budget=earnings+Welfare
+    FoodStamps=0
 
     return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps)
 end
+
+#function LA_Gain
+
+#end
+
+
+
+# Connecticut budget function
+Program_Lengths
+CTJF_Budget=zeros(2,4,4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+CTJF_Budget_TL=zeros(2,4,4,2,2)
+
+
+working=[0,1]
+participating=[0,1]
+
+for years in 1:Program_Lengths[1]
+    for kids in 1:3
+        for p in 1:2
+            for w in 1:2
+                        CTJF_Budget[1,years,kids,p, w]=0
+                        CTJF_Budget[2,years,kids,p, w]=0
+                        # =CTJF(years, kids, Earnings[1]*working[w], participating[p])
+            end
+        end
+    end
+end
+
+1+1
+
+
+
+
+
+
+
+
 
 
 function Budget_Function(s,tr,nk,age0,q,e,p,h, earnings; ageout=0)
@@ -400,9 +482,15 @@ Foodstamps_receipt2=zeros(7,3,3,Dev_Years,Dev_Years,2,2,2) # see above
     @inbounds @simd                 for w in 1:2 # working or not
     @inbounds @simd                     for p in 1:2 # program, aka participating or not
     @inbounds @simd                         for site in sites_considered # loop over controls
+                                                if site==1 || site==2
                                                 A=AFDC(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p],site)
                                                 budget2[site,1,nk,a0,q,e,p,w]=A.Budget
                                                 Foodstamps_receipt2[site,1,nk,a0,q,e,p,w]=deepcopy(A.FoodStamps)
+                                                else
+                                                    A=AFDC_MN(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p],site)
+                                                    budget2[site,1,nk,a0,q,e,p,w]=A.Budget
+                                                    Foodstamps_receipt2[site,1,nk,a0,q,e,p,w]=deepcopy(A.FoodStamps)
+                                                end
                                 # CTJF treatment
                                 if site==1 # next I fill the treatment arms in one by one
                                     C=CTJF(q, nk, Earnings[site,q]*Work[w], Eligible[e],Program[p])
