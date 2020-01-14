@@ -17,6 +17,8 @@ Ninetyone=@where(CPI,:Year.==1991)
 # Lump everything into annualized data
     # Data
 Quarterly_Data=CSV.read("../Data/QuarterlyData_Extended.csv")
+
+
 Annualized_Data=by(Quarterly_Data,
             [:Year,:Site,:Treatment_Num],
             [:LFP, :Earnings,:Welfare,:Receipt,:FoodStamps,:NEWWS,:Treatment_Num,:TotInc]=>
@@ -34,6 +36,7 @@ Annualized_Data[!,:Treatment].="Control"
     Annualized_Data.TotInc.=ifelse.((:NEWWS.==0.00), :TotInc, :TotInc./4)
 
     Annualized_Data.Treatment.=ifelse.((:Treatment_Num.!=0), "Treatment", "Control")
+    Annualized_Data.Treatment.=ifelse.((:Treatment_Num.==10), "Control", Annualized_Data.Treatment)
 
 end
 
@@ -85,10 +88,13 @@ Program_Lengths1=by(cdata, :Site, :Lengths=>sum)
 Program_Lengths1=Program_Lengths1.Lengths_sum # note: needs to be the number of CALENDAR YEARS
 Program_Lengths=[4, 5, 4, 4, 3, 5, 5, 5,]
 
+AD2=@where(Annualized_Data,:Treatment_Num.!=10)
+AD2=@where(AD2,:Treatment_Num.!=11)
+
 # I store the first year I observed a program. This will come in handy later.
 First_Year=zeros(Int64,8)
 for i in 1:8
-    Control = Annualized_Data[Annualized_Data[:, :Site] .== site[i], :]
+    Control = AD2[AD2[:, :Site] .== site[i], :]
     First_Year[i]=(minimum(Control.Year))
 end
 
@@ -96,7 +102,7 @@ end
 # I no longer extrapolate
 Earnings=zeros(8,Dev_Years+1) # I add some extra years for the parents whose kids will age out
 for i in 1:8
-    Control = Annualized_Data[Annualized_Data[:, :Site] .== site[i], :]
+    Control = AD2[AD2[:, :Site] .== site[i], :]
     Control = Control[Control[:, :Treatment] .== "Control", :]
     Control.Annual_Earnings = Control.Earnings./(Control.LFP/100)
     Control.Period = 1:size(Control)[1]
