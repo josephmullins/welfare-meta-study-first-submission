@@ -10,7 +10,7 @@ function GetParameters(x,num_sites)
     return (αc=αc,gN = ones(2)*gN, gF = ones(2)*gF,wq = wq,σC = σC,σH = σH,αWR = αWR,αF = αF, αA = αA,αH=αH)
 end
 
-# site features contains: T,n_arms,work_requirement,π0,prices
+# site features contains: T,n_arms,work_requirement,π0,prices,year_meas
 function Criterion(x,site_list,budget,moments,wghts,site_features)
     num_sites = length(site_list)
     pars = GetParameters(x,num_sites)
@@ -23,10 +23,11 @@ function Criterion(x,site_list,budget,moments,wghts,site_features)
         π0 = site_features.π0[i,:,:]
         T = site_features.T[i]
         wght = getfield(wghts,sname)
+        year_meas = site_features.year_meas[i]
         for a = 1:site_features.n_arms[i]
             WR = site_features.work_reqs[i,a]
             price = site_features.prices[i,a]
-            moms_model = GetMoments(pars_site,Y,price,WR,T,π0)
+            moms_model = GetMoments(pars_site,Y,price,WR,T,π0,year_meas)
             Qn += sum(wght[:,a].*(moms[:,a] .- moms_model))
         end
     end
@@ -35,15 +36,16 @@ end
 
 function Criterion(x,g,site_list,budget,moments,wghts,site_features)
     f0 = Criterion(x,site_list,budget,moments,wghts,site_features)
-    dF = ForwardDiff.gradient(x->Criterion(x,site_list,budget,work_reqs,site_years,price,moments,wghts),x)
+    dF = ForwardDiff.gradient(x->Criterion(x,site_list,budget,moments,wghts,site_features),x)
     g[:] = dF
     return f0
 end
 
-function GetMoments(pars,Y,price,WR,T,π0)
+# this function is wrong! We have to increase the age of each child as they grow (though π0?)
+function GetMoments(pars,Y,price,WR,T,π0,year_meas)
     NK = size(π0)[1]
     pA,pWork,pF = GetStaticProbs(pars,Y,price,WR,T,NK)
     EA,EH = GetAggMoments(pA,pWork,π0)
-    Care = GetMeanCare(T,0,9,pA,pWork,π0)
+    Care = GetMeanCare(year_meas,0,9,pA,pWork,π0)
     return [EA; EH; Care]
 end

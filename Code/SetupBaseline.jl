@@ -1,6 +1,7 @@
 # this script sets up some of the baseline characteristics for estimation in the first stage
 using CSV
 using DataFrames
+using DelimitedFiles
 
 # ---- Set up Experiment Features
 C = CSV.read("../Data/ChildCareMoms_estimated.csv")
@@ -9,8 +10,10 @@ num_sites = 8
 site_list = [:CTJF,:FTP,:LAGAIN,:MFIPLR,:MFIPRA,:NEWWSA,:NEWWSG,:NEWWSR]
 site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
 n_arms = [1,1,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to time limits
-work_reqs = [zeros(8) [0,0,1,1,1,1,1,1] zeros(8)]
-years = [3,4,2,3,3,5,5,5]
+work_reqs = [zeros(8) [1,0,1,1,1,1,1,1] zeros(8)]
+years = [4,5,3,4,4,5,5,5]
+year_meas = [3,4,2,3,3,2,2,2]
+
 # below are the distributions across age of youngest 0-2,3-5,6+
 πA = [[37.5 25.4 37.1];
     [43. 27.2 29.8];
@@ -30,19 +33,95 @@ years = [3,4,2,3,3,5,5,5]
 for i=1:8
     πA0 = [πA[i,1]*ones(3)/3;πA[i,2]*ones(3)/3;πA[i,3]*ones(11)/11]
     πk0 = [πK[i]*ones(2)/3;1-πK[i]]
-    π0[i,:,:] = πK*πA'
+    π0[i,:,:] = πk0*πA0'
 end
 
 # Prices:
 Prices = zeros(num_sites,3)
 for i=1:num_sites
     for a=0:n_arms[i]-1
-        Prices[i,a+1] = C.Price[C.Site.==site_str[i] .& C.Arm.==a]
+        Prices[i,a+1] = C.Price[(C.Site.==site_str[i]) .& (C.Arm.==a)][1]
     end
 end
 
-site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices)
+site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices, year_meas = year_meas)
 
-# --- Set up budget function
+# ------------ Set up budget function ------------------- #
+# order of budget function is: A x T x NK x 2 x 2
+ctjf = reshape(readdlm("Budgets/CTJF_MAIN"),2,4,4,2,2)
+lagain = reshape(readdlm("Budgets/LAGAIN_MAIN"),2,3,4,2,2)
+ftp = reshape(readdlm("Budgets/FTP_MAIN"),2,5,4,2,2)
+mfiplr = reshape(readdlm("Budgets/MFIP_LR_MAIN"),2,4,4,2,2)
+mfipra = reshape(readdlm("Budgets/MFIP_RA_MAIN"),2,4,4,2,2)
+newwsa = reshape(readdlm("Budgets/NEWWS_A_MAIN"),1,5,4,2,2)
+newwsg = reshape(readdlm("Budgets/NEWWS_G_MAIN"),1,5,4,2,2)
+newwsr = reshape(readdlm("Budgets/NEWWS_R_MAIN"),1,5,4,2,2)
+budget = (CTJF = ctjf, FTP = ftp, LAGAIN = lagain, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr)
 
-# --- Set up moments and wghts
+
+# ------------ Set up moments and wghts ---------------- #
+D = CSV.read("../Data/Annualized_Moments.csv")
+# CTJF
+ctjf = zeros(4*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="CTJF") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="CTJF") .& (C.Arm.==a),:]
+    ctjf[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+# FTP
+ftp = zeros(5*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
+    ftp[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# LAGAIN
+LA = zeros(3*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="LA-GAIN") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="LAGAIN") .& (C.Arm.==a),:]
+    LA[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# MFIP-LR
+mfiplr = zeros(4*2+1,3)
+for a=0:2
+    d = D[(D.Site.=="MFIP-LR") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="MFIP-LR") .& (C.Arm.==a),:]
+    mfiplr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# MFIP-RA
+mfipra = zeros(4*2+1,3)
+for a=0:2
+    d = D[(D.Site.=="MFIP-RA") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="MFIP-RA") .& (C.Arm.==a),:]
+    mfipra[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# NEWWS-A
+newssa = zeros(5*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="NEWWS-A") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="NEWWS-A") .& (C.Arm.==a),:]
+    newssa[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# NEWWS-G
+newwsg = zeros(5*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="NEWWS-G") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="NEWWS-G") .& (C.Arm.==a),:]
+    newwsg[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+# NEWWS-R
+newwsr = zeros(5*2+1,2)
+for a=0:1
+    d = D[(D.Site.=="NEWWS-R") .& (D.Treatment.==a),:]
+    c = C[(C.Site.=="NEWWS-R") .& (C.Arm.==a),:]
+    newwsr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+end
+
+moments = (CTJF = ctjf, FTP = ftp, LAGAIN = LA, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr)
