@@ -12,6 +12,27 @@ using NLopt
 pars = parameters()
 vlist = [:αc, :gN, :gF, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
 
+# first an experiment to see what it takes to fit one site well
+i=5
+vsite = [:αc,:αH,:αA,:σH,:σC,:αF,:αWR,:αWR2,:wq]
+pars,moms1,moms0 = FitSite(vsite,site_list,budget,moments,wghts,site_features,i)
+colors = ["blue","green","red"]
+T = site_features.T[i]
+for a=1:site_features.n_arms[i]
+    figure("AFDC")
+    #subplot(2,4,i)
+    title(String(site_list[i]))
+    plot(moms0[1:T,a],color=colors[a])
+    plot(moms1[1:T,a],color=colors[a],linestyle="--")
+    figure("LFP")
+    #subplot(2,4,i)
+    title(String(site_list[i]))
+    plot(moms0[T+1:2*T,a],color=colors[a])
+    plot(moms1[T+1:2*T,a],color=colors[a],linestyle="--")
+end
+
+
+break
 vlist0 = [:αc, :gN, :gF, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF]
 opt,x0 = GetOptimization(pars,vlist0,site_list,budget,moments,wghts,site_features)
 np = length(x0)
