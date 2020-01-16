@@ -13,6 +13,7 @@ n_arms = [1,1,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to 
 work_reqs = [zeros(8) [1,0,1,1,1,1,1,1] zeros(8)]
 years = [4,5,3,4,4,5,5,5]
 year_meas = [3,4,2,3,3,2,2,2]
+yb = [1996,1994,1996,1994,1994,1991,1991,1991]
 
 # below are the distributions across age of youngest 0-2,3-5,6+
 πA = [[37.5 25.4 37.1];
@@ -44,7 +45,7 @@ for i=1:num_sites
     end
 end
 
-site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices, year_meas = year_meas)
+site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices, year_meas = year_meas, yb = yb)
 
 # ------------ Set up budget function ------------------- #
 # order of budget function is: A x T x NK x 2 x 2
