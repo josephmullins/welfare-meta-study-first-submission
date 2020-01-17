@@ -1,6 +1,6 @@
 # budget matrix
 cd("/Users/FilipB/github/welfare-meta-study/Code")
-
+#cd("/Users/joseph/welfare-meta-study/Code")
 using CSV
 using GLM
 using DataFrames
