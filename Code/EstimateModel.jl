@@ -13,7 +13,7 @@ pars = parameters()
 vlist = [:αc, :gN, :gF, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
 
 # first an experiment to see what it takes to fit one site well
-i=5
+i=8
 vsite = [:αc,:αH,:αA,:σH,:σC,:αF,:αWR,:αWR2]
 pars,moms1,moms0 = FitSite(vsite,site_list,budget,moments,wghts,site_features,i)
 colors = ["blue","green","red"]
