@@ -4,6 +4,9 @@ using CSV
 using GLM
 using DataFrames
 using DelimitedFiles
+using Dates
+using DataFramesMeta
+using StatsBase
 
 
 
@@ -302,10 +305,17 @@ function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
         Ben=Benefit[nk,3,q]
 
 
-    Welfare=participation*
-                max(min(1.2*Ben-(1-0.38)*earnings,Ben),0)
-    Budget=earnings+Welfare
-    FoodStamps=0
+    #Welfare=participation*max(min(1.2*Ben-(1-0.38)*earnings,Ben),0)
+    #Budget=earnings+Welfare
+    #FoodStamps=0
+    #Benefits=Welfare+FoodStamps
+
+
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
+    D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
+    MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+    Welfare=(MFIP-FoodStamps)
+    Budget=earnings+Welfare+FoodStamps
     Benefits=Welfare+FoodStamps
 
 
@@ -446,7 +456,7 @@ for years in 1:Program_Lengths[3]
         for p in 1:2
             for w in 1:2
                             # Arm 1 is control, arm 2 is treatment
-                        Arm1=AFDC_MN(years, kids, Earnings[3,years]*working[w], participating[p],3)
+                        Arm1=AFDC(years, kids, Earnings[3,years]*working[w], participating[p],3)
                         Arm2=MFIP(years, kids, Earnings[3,years]*working[w], participating[p])
 
                         MN_LR_Budget[1,years,kids,p, w]=Arm1.Budget
