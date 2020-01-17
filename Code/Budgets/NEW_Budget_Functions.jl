@@ -234,26 +234,30 @@ function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefi
 
 end
 
-function AFDC_MN(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP)
+function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
 
-        FS=SNAP[nk,site, q]
-        Ben=Benefit[nk,site,q]
+        FS=SNAP[nk,3, q]
+        Ben=Benefit[nk,3,q]
 
-    #=
-    Note: the welfare payout calculation assumes that the benefit standard in MN
-    sweeps in AFDC and food stamps, so to calculate AFDC for a family earning
-    nothing I must subtract FS from Ben
-    =#
 
-    Welfare=participation*(max((Ben-FS)-(1-0.33)*max(earnings-120,0),0))
-    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
-    Budget=Welfare+FoodStamps+earnings
+    #Welfare=participation*max(min(1.2*Ben-(1-0.38)*earnings,Ben),0)
+    #Budget=earnings+Welfare
+    #FoodStamps=0
+    #Benefits=Welfare+FoodStamps
 
+
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Ben-134,0),0 )
+    D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
+    MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+    Welfare=(MFIP-FoodStamps)
+    Budget=earnings+Welfare+FoodStamps
     Benefits=Welfare+FoodStamps
 
-    return AFDC=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, Benefits=Benefits)
 
+    return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, Benefits=Benefits)
 end
+
+
 
 
 
@@ -299,28 +303,7 @@ end
 
 
 
-function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
 
-        FS=SNAP[nk,3, q]
-        Ben=Benefit[nk,3,q]
-
-
-    #Welfare=participation*max(min(1.2*Ben-(1-0.38)*earnings,Ben),0)
-    #Budget=earnings+Welfare
-    #FoodStamps=0
-    #Benefits=Welfare+FoodStamps
-
-
-    FoodStamps=participation*max(FS-0.3*max(0.8*earnings-134,0),0 )
-    D=participation*Ben+FoodStamps # notice the deviation from the formula in the document
-    MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-    Welfare=(MFIP-FoodStamps)
-    Budget=earnings+Welfare+FoodStamps
-    Benefits=Welfare+FoodStamps
-
-
-    return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, Benefits=Benefits)
-end
 
 c1=@where(CaliRules,:Year.==1,:NumKids.==1)
 c1.MaxBenefit[1]
@@ -465,7 +448,7 @@ for years in 1:Program_Lengths[3]
                         MN_LR_Benefits[2,years,kids,p, w]=Arm2.Benefits
 
                         # Site 3 is LR, 4 is RA
-                        Arm1=AFDC_MN(years, kids, Earnings[4,years]*working[w], participating[p],4)
+                        Arm1=AFDC(years, kids, Earnings[4,years]*working[w], participating[p],4)
                         Arm2=MFIP(years, kids, Earnings[4,years]*working[w], participating[p])
 
                     MN_RA_Budget[1,years,kids,p, w]=Arm1.Budget
@@ -479,11 +462,17 @@ for years in 1:Program_Lengths[3]
     end
 end
 
+MN_LR_Budget[1,:,:,:,1].-MN_LR_Budget[2,:,:,:,1]
+
+
+
 writedlm("Budgets/MFIP_LR_MAIN",MN_LR_Budget)
 writedlm("Budgets/MFIP_LR_BENEFITS",MN_LR_Benefits)
 
 writedlm("Budgets/MFIP_RA_MAIN",MN_RA_Budget)
 writedlm("Budgets/MFIP_RA_BENEFITS",MN_RA_Benefits)
+
+MN_RA_Budget[1,:,:,:,1].-MN_RA_Budget[2,:,:,:,1]
 
 
 # LA budget matrices

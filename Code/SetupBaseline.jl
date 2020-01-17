@@ -100,6 +100,7 @@ end
 # MFIP-RA
 mfipra = zeros(4*2+1,3)
 w_mfipra = 100*ones(4*2+1,3)
+#w_mfipra[:,3] .= 0.
 for a=0:2
     d = D[(D.Site.=="MFIP-RA") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="MFIP-RA") .& (C.Arm.==a),:]

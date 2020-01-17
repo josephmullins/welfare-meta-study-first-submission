@@ -15,12 +15,12 @@ function ChoiceProb(pars,Y,price,t,nk,age,CV,WR)
 			uF = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) + pars.αF - gF
 			uN = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
 			pF[p+1] = 1/(1+exp((uN-uF)/pars.σC)) #<- probability of formal care
-			vW1 = pars.σC*log(exp(uN/pars.σC)+exp(uF/pars.σC)) - pars.αH[t] - WR*p*pars.αWR2
+			vW1 = pars.σC*log(exp(uN/pars.σC)+exp(uF/pars.σC)) - pars.αH - WR*p*pars.αWR2
 			vW0 = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,1] + 112*pars.wq) - pars.αWR*WR*p
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
 			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p
 		else
-			vW1 = pars.αc*log(Y[t,1,1+p,2]+(112-30)*pars.wq) - pars.αH[t]
+			vW1 = pars.αc*log(Y[t,1,1+p,2]+(112-30)*pars.wq) - pars.αH
 			vW0 = pars.αc*log(Y[t,1,1+p,1]+(112)*pars.wq)
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
 			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p

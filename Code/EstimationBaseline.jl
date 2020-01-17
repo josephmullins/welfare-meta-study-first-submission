@@ -152,13 +152,13 @@ end
 
 function FitSite(vars,site_list,budget,moments,wghts,site_features,i)
     T = site_features.T[i]
-    np = (αc = 1, gN = 1, gF =1, αH = T, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(T), αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf)
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(T), αA = Inf, σH = Inf, σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf)
+    np = (αc = 1, gN = 1, gF =1, αH = 1, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf, αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf, αA = Inf, σH = Inf, σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf)
     αc = 1.
     gN = 0.
     gF = 0.
-    αH = zeros(T) #zeros(35)
+    αH = 0. #zeros(T) #zeros(35)
     αA = 2.
     β = 0.9
     σH = 1.
@@ -192,6 +192,29 @@ function FitSite(vars,site_list,budget,moments,wghts,site_features,i)
     return pars,moms_model,moms
 end
 
+function FitSite(pars,vars,site_list,budget,moments,wghts,site_features,i)
+    T = site_features.T[i]
+    opt,x0 = GetOptimization(pars,vars,site_list,budget,moments,wghts,site_features)
+    min_objective!(opt,(x,g)->CriterionSite(x,g,pars,vars,site_list,budget,moments,wghts,site_features,i))
+    res = optimize(opt,x0)
+    pars = UpdatePars(res[2],pars,vars)
+    sname = site_list[i]
+    Y = getfield(budget,sname)
+    moms = getfield(moments,sname)
+    π0 = site_features.π0[i,:,:]
+    year_meas = site_features.year_meas[i]
+    Abar = size(Y)[1]
+    moms_model = zeros(size(moms))
+    for a = 1:site_features.n_arms[i]
+        WR = site_features.work_reqs[i,a]
+        price = site_features.prices[i,a]
+        abar = min(Abar,a)
+        moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+    end
+    println(res[1])
+    println(res[3])
+    return pars,moms_model,moms
+end
 
 
 function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)

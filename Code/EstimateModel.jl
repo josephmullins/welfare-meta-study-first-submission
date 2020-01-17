@@ -13,9 +13,13 @@ pars = parameters()
 vlist = [:αc, :gN, :gF, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
 
 # first an experiment to see what it takes to fit one site well
-i=8
-vsite = [:αc,:αH,:αA,:σH,:σC,:αF,:αWR,:αWR2]
-pars,moms1,moms0 = FitSite(vsite,site_list,budget,moments,wghts,site_features,i)
+i=5
+vsite1 = [:αc,:αH,:αA,:αF,:αWR,:αWR2]
+vsite2 = [:αc,:αH,:αA,:σC,:αF,:αWR,:αWR2,:σH,:σC]
+
+pars,moms1,moms0 = FitSite(vsite1,site_list,budget,moments,wghts,site_features,i)
+pars,moms1,moms0 = FitSite(pars,vsite2,site_list,budget,moments,wghts,site_features,i)
+
 colors = ["blue","green","red"]
 T = site_features.T[i]
 for a=1:site_features.n_arms[i]
