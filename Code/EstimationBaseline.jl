@@ -7,9 +7,9 @@ using PyPlot
 # one idea: do a copy operation each time?
 
 function parameters()
-    np = (αc = 1, gN = 1, gF =1, αH = 35, αA = 8, σH = 8, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(35), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf, αHT = -Inf*ones(8))
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(35), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf, αHT = Inf*ones(8))
+    np = (αc = 1, gN = 1, gF =1, αH = 35, αA = 8, σH = 8, σC = 1, wq = 1, αWR = 8, αWR2 = 8, αF = 1, αHT = 8, β = 1)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(35), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf*ones(8), αWR2 = -Inf*ones(8), αF = -Inf, αHT = -Inf*ones(8), β = 0.)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(35), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = Inf, αWR = Inf*ones(8), αWR2 = Inf*ones(8), αF = Inf, αHT = Inf*ones(8), β = 1.)
     αc = 1.
     gN = 0.
     gF = 0.
@@ -19,8 +19,8 @@ function parameters()
     σH = ones(8)
     σC = 1.
     wq = 2.
-    αWR = 0.
-    αWR2 = 0.
+    αWR = ones(8)
+    αWR2 = ones(8)
     αF = 0.
     αHT = zeros(8)
     Γ = zeros(18)
@@ -101,7 +101,7 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
         αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc,gN = ones(2)*pars.gN,gF = ones(2)*pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=0.)
+        pars_site = (αc = pars.αc,gN = ones(2)*pars.gN,gF = ones(2)*pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR[i],αWR2 = pars.αWR2[i],αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -109,13 +109,33 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
         wght = getfield(wghts,sname)
         year_meas = site_features.year_meas[i]
         Abar = size(Y)[1]
-        for a = 1:site_features.n_arms[i]
+        price = site_features.prices[i,1]
+        moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+        Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
+
+        for a = 2:site_features.n_arms[i]
             WR = site_features.work_reqs[i,a]
             price = site_features.prices[i,a]
             abar = min(Abar,a)
-            moms_model = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
-            Qn += sum(wght[:,a].*(moms[:,a] .- moms_model).^2)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                moms_model = GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+            else
+                moms_model = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+            end
+            TE = moms[:,a] .- moms[:,1]
+            TE_mod = moms_model .- moms_control
+            Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
         end
+
+        # for a = 1:site_features.n_arms[i]
+        #     WR = site_features.work_reqs[i,a]
+        #     price = site_features.prices[i,a]
+        #     abar = min(Abar,a)
+        #     moms_model = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        #     Qn += sum(wght[:,a].*(moms[:,a] .- moms_model).^2)
+        # end
     end
     return Qn
 end
@@ -133,12 +153,26 @@ function CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,
     wght = getfield(wghts,sname)
     year_meas = site_features.year_meas[i]
     Abar = size(Y)[1]
-    for a = 1:site_features.n_arms[i]
+
+    # do control group
+    price = site_features.prices[i,1]
+    moms_control = GetMoments(pars,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+    Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
+
+    for a = 2:site_features.n_arms[i]
         WR = site_features.work_reqs[i,a]
         price = site_features.prices[i,a]
         abar = min(Abar,a)
-        moms_model = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
-        Qn += sum(wght[:,a].*(moms[:,a] .- moms_model).^2)
+        if site_features.time_limits[i,a]==1
+            Y_I = budget[Symbol(sname,"_I")]
+            TLlength = site_features.TLlength[i,a]
+            moms_model = GetMomentsTimeLims(pars,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+        else
+            moms_model = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        end
+        TE = moms[:,a] .- moms[:,1]
+        TE_mod = moms_model .- moms_control
+        Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
     end
     return Qn
 end
@@ -152,15 +186,15 @@ end
 
 function FitSite(vars,site_list,budget,moments,wghts,site_features,i)
     T = site_features.T[i]
-    np = (αc = 1, gN = 1, gF =1, αH = 1, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf, αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf)
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf, αA = Inf, σH = Inf, σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf)
+    np = (αc = 1, gN = 1, gF =1, αH = T, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8,β=1)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = ones(T)*-Inf, αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf,β=0.)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = ones(T)*Inf, αA = Inf, σH = 20., σC = 20., wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf,β=1.)
     αc = 1.
     gN = 0.
     gF = 0.
-    αH = 0. #zeros(T) #zeros(35)
-    αA = 2.
-    β = 0.9
+    αH = zeros(T) #zeros(35)
+    αA = 0.
+    β = 0.5
     σH = 1.
     σC = 1.
     wq = 2.
@@ -185,7 +219,14 @@ function FitSite(vars,site_list,budget,moments,wghts,site_features,i)
         WR = site_features.work_reqs[i,a]
         price = site_features.prices[i,a]
         abar = min(Abar,a)
-        moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        if site_features.time_limits[i,a]==1
+            Y_I = budget[Symbol(sname,"_I")]
+            TLlength = site_features.TLlength[i,a]
+            moms_model[:,a] = GetMomentsTimeLims(pars,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+        else
+            moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        end
+
     end
     println(res[1])
     println(res[3])
@@ -209,7 +250,15 @@ function FitSite(pars,vars,site_list,budget,moments,wghts,site_features,i)
         WR = site_features.work_reqs[i,a]
         price = site_features.prices[i,a]
         abar = min(Abar,a)
-        moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        #moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        if site_features.time_limits[i,a]==1
+            Y_I = budget[Symbol(sname,"_I")]
+            TLlength = site_features.TLlength[i,a]
+            moms_model[:,a] = GetMomentsTimeLims(pars,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+        else
+            moms_model[:,a] = GetMoments(pars,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+        end
+
     end
     println(res[1])
     println(res[3])
@@ -226,7 +275,7 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
         αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc,gN = pars.gN,gF = pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=0.)
+        pars_site = (αc = pars.αc,gN = pars.gN,gF = pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR[i],αWR2 = pars.αWR2[i],αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=0.)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -260,6 +309,17 @@ function GetMoments(pars,Y,price,WR,T,π0,year_meas)
     Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
     return [EA; EH; Care]
 end
+
+function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas)
+    NK = size(π0)[1]
+    pA,pWork,pF = GetDynamicProbs(pars,Y,Y_I,price,WR,T,NK,TLlength)
+    EA,EH = GetDynamicMoments(pA,pWork,π0)
+    #EA,EH = GetAggMoments(pA,pWork,π0)
+    #Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
+    Care = 0.4
+    return [EA; EH; Care]
+end
+
 
 function InspectModelFit(model_moments,data_moments,site_features,site_list)
     colors = ["red","green","blue"]

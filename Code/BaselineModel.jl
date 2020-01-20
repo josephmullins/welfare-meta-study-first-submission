@@ -15,12 +15,12 @@ function ChoiceProb(pars,Y,price,t,nk,age,CV,WR)
 			uF = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) + pars.αF - gF
 			uN = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
 			pF[p+1] = 1/(1+exp((uN-uF)/pars.σC)) #<- probability of formal care
-			vW1 = pars.σC*log(exp(uN/pars.σC)+exp(uF/pars.σC)) - pars.αH - WR*p*pars.αWR2
+			vW1 = pars.σC*log(exp(uN/pars.σC)+exp(uF/pars.σC)) - pars.αH[t] - WR*p*pars.αWR2
 			vW0 = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,1] + 112*pars.wq) - pars.αWR*WR*p
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
 			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p
 		else
-			vW1 = pars.αc*log(Y[t,1,1+p,2]+(112-30)*pars.wq) - pars.αH
+			vW1 = pars.αc*log(Y[t,1,1+p,2]+(112-30)*pars.wq) - pars.αH[t]
 			vW0 = pars.αc*log(Y[t,1,1+p,1]+(112)*pars.wq)
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
 			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p
@@ -49,6 +49,75 @@ function GetStaticProbs(pars,Y,price,WR,T,NK)
 	end
 	return pA,pWork,pF
 end
+
+# one thing is missing: the budget when someone is ineligible (just food stamps)
+# can we recover this?
+# problem ends when child turns 18
+
+function GetDynamicProbs(pars,Y,Y_fs,price,WR,T,NK,TLlength)
+	Tbar = size(Y)[1]
+	pWork = zeros(Real,T,NK,17,TLlength+1,2)
+	pF = zeros(Real,T,NK,17,TLlength+1,2)
+	pA = zeros(Real,T,NK,17,TLlength+1)
+	for a0=0:16
+		for nk=1:NK
+			Tprob = max(18-a0,T)
+			V = zeros(Real,Tprob+1,TLlength+1)
+			for t=Tprob:-1:1
+				age = a0+t-1
+				tbar = min(Tbar,t)
+				pA_ = zeros(Real,TLlength+1)
+				pW_ = zeros(Real,TLlength+1,2)
+				pF_ = zeros(Real,TLlength+1,2)
+				for w=1:TLlength
+					cv = V[t+1,[w,w+1]]
+					pA_[w],pW_[w,:],pF_[w,:],V[t,w] = ChoiceProb(pars,Y,price,tbar,nk,age,cv,WR)
+				end
+				w_ = TLlength+1
+				cv = [V[t+1,w_],V[t+1,w_]]
+				pA_[w_],pW_[w_,:],pF_[w_,:],V[t,w_] = ChoiceProb(pars,Y_fs,price,tbar,nk,age,cv,WR)
+				if t<=T
+					pA[t,nk,a0+1,:] .= pA_
+					pWork[t,nk,a0+1,:,:] .= pW_
+					pF[t,nk,a0+1,:,:] .= pF_
+				end
+			end
+		end
+	end
+	return pA,pWork,pF
+end
+
+function GetDynamicMoments(pA,pWork,π0)
+	# π0 is a NK x 17 probability distribution
+	T = size(pA)[1]
+	NK = size(pA)[2]
+	TLlength = size(pA)[4]-1
+	EA = zeros(Real,T)
+	EH = zeros(Real,T)
+	for a0 = 0:16
+		for nk=1:NK
+			π1 = zeros(Real,T,TLlength+1)
+			π1[1,1] = π0[nk,a0+1]
+			for t=1:T
+				for w=1:TLlength+1
+					EA[t] += π1[t,w]*pA[t,nk,a0+1,w]
+					EH[t] += π1[t,w]*(pWork[t,nk,a0+1,w,1] + pA[t,nk,a0+1,w]*(pWork[t,nk,a0+1,w,2]-pWork[t,nk,a0+1,w,1]))
+					if t<T
+						if w<=TLlength
+							π1[t+1,w] += π1[t,w]*(1-pA[t,nk,a0+1,w])
+							π1[t+1,w+1] += π1[t,w]*(1-pA[t,nk,a+1,w])
+						else
+							π1[t+1,w] += π1[t,w]
+						end
+					end
+				end
+			end
+		end
+	end
+	return EA,EH
+end
+
+
 
 function GetAggMoments(pA,pWork,π0)
 	T = size(pA)[1]
