@@ -14,9 +14,9 @@ vlist = [:αc, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
 
 
 # # first an experiment to see what it takes to fit one site well
-i=1
-vsite1 = [:αc,:αH,:αA,:αF,:σH] #,:αWR,:αWR2]
-vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:β,:wq] #:αWR,:αWR2,:β]
+i=2
+vsite1 = [:αc,:αH,:αA,:αF,:β] #,:αWR,:αWR2] #what if we went with just one alphaH
+vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:β,:wq] # :αWR,:αWR2]#,:β]
 
 pars,moms1,moms0 = FitSite(vsite1,site_list,budget,moments,wghts,site_features,i)
 pars,moms1,moms0 = FitSite(pars,vsite2,site_list,budget,moments,wghts,site_features,i)

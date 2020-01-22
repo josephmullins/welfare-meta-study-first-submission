@@ -171,7 +171,7 @@ function CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,
         end
         TE = moms[:,a] .- moms[:,1]
         TE_mod = moms_model .- moms_control
-        #Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+        Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
     end
     return Qn
 end
@@ -193,13 +193,13 @@ end
 
 function FitSite(vars,site_list,budget,moments,wghts,site_features,i)
     T = site_features.T[i]
-    np = (αc = 1, gN = 1, gF =1, αH = T, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8,β=1)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = ones(T)*-Inf, αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf,β=0.)
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = ones(T)*Inf, αA = Inf, σH = 20., σC = 20., wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf,β=1.)
+    np = (αc = 1, gN = 1, gF =1, αH = 1, αA = 1, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 1, αHT = 8,β=1)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf, αA = -Inf, σH = 0., σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf,β=0.)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf, αA = Inf, σH = Inf, σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf,β=1.)
     αc = 1.
     gN = 0.
     gF = 0.
-    αH = zeros(T) #zeros(35)
+    αH = 0. #zeros(T) #zeros(35)
     αA = 0.
     β = 0.5
     σH = 1.
