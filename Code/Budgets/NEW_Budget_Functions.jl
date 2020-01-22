@@ -361,7 +361,7 @@ for years in 1:Program_Lengths[1]
                         CTJF_Budget[2,years,kids,p, w]=Arm2_E.Budget
 
                         CTJF_Budget_Ineligible[1,years,kids,p, w]=Arm1_I.FoodStamps
-                        CTJF_Budget_Ineligible[2,years,kids,p, w]=Arm2_E.Budget
+                        CTJF_Budget_Ineligible[2,years,kids,p, w]=Arm2_I.Budget
 
                         CTJF_Benefits[1,years,kids,p, w]=Arm1_E.Benefits
                         CTJF_Benefits[2,years,kids,p, w]=Arm2_E.Benefits
@@ -405,7 +405,7 @@ for years in 1:Program_Lengths[2]
                         FL_Budget[2,years,kids,p, w]=Arm2_E.Budget
 
                         FL_Budget_Ineligible[1,years,kids,p, w]=Arm1_I.FoodStamps
-                        FL_Budget_Ineligible[2,years,kids,p, w]=Arm2_E.Budget
+                        FL_Budget_Ineligible[2,years,kids,p, w]=Arm2_I.Budget
 
                         FL_Benefits[1,years,kids,p, w]=Arm1_E.Benefits
                         FL_Benefits[2,years,kids,p, w]=Arm2_E.Benefits
