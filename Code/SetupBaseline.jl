@@ -11,7 +11,7 @@ site_list = [:CTJF,:FTP,:LAGAIN,:MFIPLR,:MFIPRA,:NEWWSA,:NEWWSG,:NEWWSR]
 site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
 n_arms = [2,2,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to time limits
 work_reqs = [zeros(8) [1,0,1,1,1,1,1,1] zeros(8)]
-years = [4,5,3,4,4,5,5,5]
+years = [4,4,3,4,4,5,5,5]
 year_meas = [3,4,2,3,3,2,2,2]
 yb = [1996,1994,1996,1994,1994,1991,1991,1991]
 time_limits = zeros(8,3); time_limits[1,2] = 1; time_limits[2,2] = 1;
@@ -91,12 +91,12 @@ for a=0:1
     ctjf[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
 end
 # FTP
-ftp = zeros(5*2+1,2)
-w_ftp = 100*ones(5*2+1,2)
+ftp = zeros(4*2+1,2)
+w_ftp = 100*ones(4*2+1,2)
 for a=0:1
     d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
-    ftp[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    ftp[:,a+1] = [d.Participation[1:4]/100;d.LFP[1:4]/100;c.UsePaid[1]]
 end
 
 # LAGAIN
