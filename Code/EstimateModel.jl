@@ -10,7 +10,7 @@ using NLopt
 #pars = (αc=1. ,gN = 0. *ones(2), gF = ones(2)*0.2,wq = 2.,σC = 1.,σH = 1.,αWR = 0.5,αF = 2., αA = 1. *ones(num_sites),αH=1. *ones(num_sites),Γ=Γ,β=0.)
 
 pars = parameters()
-vlist = [:αc, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
+vlist = [:αc, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF, :β]
 
 
 # # first an experiment to see what it takes to fit one site well
@@ -53,7 +53,7 @@ opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features
 res2 = optimize(opt,x0)
 pars2 = UpdatePars(res2[2],pars,vlist)
 moms=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
-InspectModelFit(moms,moments,site_features,site_list)
+InspectTreatFit(moms,moments,site_features,site_list)
 
 break
 opt,x0 = GetOptimization(pars,[:αH],site_list,budget,moments,wghts,site_features)

@@ -327,6 +327,29 @@ function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas)
 end
 
 
+function InspectTreatFit(model_moments,data_moments,site_features,site_list)
+    colors = ["red","green","blue"]
+    for i=1:8
+        T = site_features.T[i]
+        moms0 = getfield(model_moments,site_list[i])
+        moms1 = getfield(data_moments,site_list[i])
+        for a=2:site_features.n_arms[i]
+            figure("AFDC")
+            subplot(2,4,i)
+            title(String(site_list[i]))
+            plot(moms0[1:T,a] .- moms0[1:T,1],color=colors[a])
+            plot(moms1[1:T,a] .- moms1[1:T,1],color=colors[a],linestyle="--")
+            figure("LFP")
+            subplot(2,4,i)
+            title(String(site_list[i]))
+            plot(moms0[T+1:2*T,a] .- moms0[T+1:2*T,1],color=colors[a])
+            plot(moms1[T+1:2*T,a] .- moms1[T+1:2*T,1],color=colors[a],linestyle="--")
+            figure("Scatter")
+            scatter(moms0[:,a] .- moms0[:,1],moms1[:,a] .- moms1[:,1],color="blue")
+        end
+    end
+end
+
 function InspectModelFit(model_moments,data_moments,site_features,site_list)
     colors = ["red","green","blue"]
     for i=1:8
