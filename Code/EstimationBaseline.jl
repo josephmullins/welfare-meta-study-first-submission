@@ -142,7 +142,7 @@ end
 
 function CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,i)
     pars = UpdatePars(x,pars,vars)
-    Qn = 0
+    Qn = Real(0.)
     yb = site_features.yb[i]
     T = site_features.T[i]
     years = (yb+1-1991):(yb-1991+T)
@@ -157,8 +157,7 @@ function CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,
     # do control group
     price = site_features.prices[i,1]
     moms_control = GetMoments(pars,Y[1,:,:,:,:],price,0,T,π0,year_meas)
-    Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
-
+    Qn += sum(wght[:,1] .* (moms[:,1] .- moms_control).^2)
     for a = 2:site_features.n_arms[i]
         WR = site_features.work_reqs[i,a]
         price = site_features.prices[i,a]
@@ -172,7 +171,7 @@ function CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,
         end
         TE = moms[:,a] .- moms[:,1]
         TE_mod = moms_model .- moms_control
-        Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+        #Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
     end
     return Qn
 end
@@ -180,6 +179,14 @@ end
 function CriterionSite(x,g,pars,vars,site_list,budget,moments,wghts,site_features,i)
     f0 = CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,i)
     dF = ForwardDiff.gradient(x->CriterionSite(x,pars,vars,site_list,budget,moments,wghts,site_features,i),x)
+    # don't have a better way to do this currently
+    for j in findall(isnan.(dF))
+        Δ = 1e-6
+        x1 = copy(x)
+        x1[j] += Δ
+        f1 = CriterionSite(x1,pars,vars,site_list,budget,moments,wghts,site_features,i)
+        dF[j] = (f1-f0)/Δ
+    end
     g[:] = dF
     return f0
 end
@@ -313,10 +320,9 @@ end
 function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas)
     NK = size(π0)[1]
     pA,pWork,pF = GetDynamicProbs(pars,Y,Y_I,price,WR,T,NK,TLlength)
-    EA,EH = GetDynamicMoments(pA,pWork,π0)
+    EA,EH,Care = GetDynamicMoments(pA,pWork,π0,year_meas,0,9)
     #EA,EH = GetAggMoments(pA,pWork,π0)
     #Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
-    Care = 0.4
     return [EA; EH; Care]
 end
 

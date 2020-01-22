@@ -1,5 +1,13 @@
 # for now we're going to assume annual frequency (for simplicity)
 
+function IncVal(v0,v1,σ)
+	if v1>v0
+		return v1 + σ*log(1+exp((v0-v1)/σ))
+	else
+		return v0 + σ*log(1+exp((v1-v0)/σ))
+	end
+end
+
 # this function calculates the choice probabilities, and produces the Emax function
 function ChoiceProb(pars,Y,price,t,nk,age,CV,WR)
 	pWork = zeros(Real,2) #<- work choice probabilities
@@ -15,19 +23,19 @@ function ChoiceProb(pars,Y,price,t,nk,age,CV,WR)
 			uF = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) + pars.αF - gF
 			uN = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
 			pF[p+1] = 1/(1+exp((uN-uF)/pars.σC)) #<- probability of formal care
-			vW1 = pars.σC*log(exp(uN/pars.σC)+exp(uF/pars.σC)) - pars.αH[t] - WR*p*pars.αWR2
+			vW1 = IncVal(uN,uF,pars.σC) - pars.αH[t] - WR*p*pars.αWR2
 			vW0 = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,1] + 112*pars.wq) - pars.αWR*WR*p
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
-			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p
+			vA[p+1] = IncVal(vW0,vW1,pars.σH) + pars.β*CV[p+1] - pars.αA*p
 		else
 			vW1 = pars.αc*log(Y[t,1,1+p,2]+(112-30)*pars.wq) - pars.αH[t]
 			vW0 = pars.αc*log(Y[t,1,1+p,1]+(112)*pars.wq)
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
-			vA[p+1] = pars.σH*log(exp(vW0/pars.σH)+exp(vW1/pars.σH)) + pars.β*CV[p+1] - pars.αA*p
+			vA[p+1] = IncVal(vW0,vW1,pars.σH) + pars.β*CV[p+1] - pars.αA*p
 		end
 	end
 	pA = 1/(1+exp(vA[1]-vA[2]))
-	V = log(exp(vA[1])+exp(vA[2]))
+	V = IncVal(vA[1],vA[2],1.)
 	return pA,pWork,pF,V
 end
 
@@ -87,34 +95,44 @@ function GetDynamicProbs(pars,Y,Y_fs,price,WR,T,NK,TLlength)
 	return pA,pWork,pF
 end
 
-function GetDynamicMoments(pA,pWork,π0)
+function GetDynamicMoments(pA,pWork,π0,year,a0,a1)
 	# π0 is a NK x 17 probability distribution
 	T = size(pA)[1]
 	NK = size(pA)[2]
 	TLlength = size(pA)[4]-1
 	EA = zeros(Real,T)
 	EH = zeros(Real,T)
-	for a0 = 0:16
+	numerator = 0
+	denom = 0
+	for a = 0:16
 		for nk=1:NK
 			π1 = zeros(Real,T,TLlength+1)
-			π1[1,1] = π0[nk,a0+1]
+			π1[1,1] = π0[nk,a+1]
 			for t=1:T
 				for w=1:TLlength+1
-					EA[t] += π1[t,w]*pA[t,nk,a0+1,w]
-					EH[t] += π1[t,w]*(pWork[t,nk,a0+1,w,1] + pA[t,nk,a0+1,w]*(pWork[t,nk,a0+1,w,2]-pWork[t,nk,a0+1,w,1]))
+					EA[t] += π1[t,w]*pA[t,nk,a+1,w]
+					EH[t] += π1[t,w]*(pWork[t,nk,a+1,w,1] + pA[t,nk,a+1,w]*(pWork[t,nk,a+1,w,2]-pWork[t,nk,a+1,w,1]))
 					if t<T
 						if w<=TLlength
-							π1[t+1,w] += π1[t,w]*(1-pA[t,nk,a0+1,w])
-							π1[t+1,w+1] += π1[t,w]*(1-pA[t,nk,a+1,w])
+							π1[t+1,w] += π1[t,w]*(1-pA[t,nk,a+1,w])
+							π1[t+1,w+1] += π1[t,w]*pA[t,nk,a+1,w]
 						else
 							π1[t+1,w] += π1[t,w]
 						end
 					end
 				end
 			end
+			if (a>=a0) & (a<=a1)
+				for w=1:(TLlength+1)
+					mass1 = pA[year,nk,1+a,w]*pWork[year,nk,1+a,w,2]
+					mass0 = (1-pA[year,nk,1+a,w])*pWork[year,nk,1+a,w,1]
+					numerator += π1[year,w]*(mass1*pF[year,nk,1+a,2]+mass0*pF[year,nk,1+a,1])
+					denom += π1[year,w]*(mass0+mass1)
+				end
+			end
 		end
 	end
-	return EA,EH
+	return EA,EH,numerator/denom
 end
 
 
