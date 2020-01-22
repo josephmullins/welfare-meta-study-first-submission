@@ -8,12 +8,12 @@ using PyPlot
 
 function parameters()
     np = (αc = 1, gN = 1, gF =1, αH = 8, αA = 8, σH = 8, σC = 1, wq = 1, αWR = 8, αWR2 = 8, αF = 1, αHT = 8, β = 1)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(8), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf, αHT = -Inf*ones(8), β = 0.)
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(8), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf, αHT = Inf*ones(8), β = 1.)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = 0*ones(8), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf, αHT = -Inf*ones(8), β = 0.)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(8), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = 5., αWR = Inf, αWR2 = Inf, αF = Inf, αHT = Inf*ones(8), β = 1.)
     αc = 1.
     gN = 0.
     gF = 0.
-    αH = zeros(8) #zeros(35) #zeros(35)
+    αH = 0.1 .+ zeros(8) #zeros(35) #zeros(35)
     αA = zeros(8)
     β = 0.9
     σH = ones(8)
@@ -294,7 +294,13 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
             WR = site_features.work_reqs[i,a]
             price = site_features.prices[i,a]
             abar = min(Abar,a)
-            moms_model[:,a] = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                moms_model[:,a] = GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+            else
+                moms_model[:,a] = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+            end
         end
         append!(moms_collect,[moms_model])
     end
@@ -320,7 +326,7 @@ end
 function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas)
     NK = size(π0)[1]
     pA,pWork,pF = GetDynamicProbs(pars,Y,Y_I,price,WR,T,NK,TLlength)
-    EA,EH,Care = GetDynamicMoments(pA,pWork,π0,year_meas,0,9)
+    EA,EH,Care = GetDynamicMoments(pA,pWork,pF,π0,year_meas,0,9)
     #EA,EH = GetAggMoments(pA,pWork,π0)
     #Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
     return [EA; EH; Care]

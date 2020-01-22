@@ -95,7 +95,7 @@ function GetDynamicProbs(pars,Y,Y_fs,price,WR,T,NK,TLlength)
 	return pA,pWork,pF
 end
 
-function GetDynamicMoments(pA,pWork,π0,year,a0,a1)
+function GetDynamicMoments(pA,pWork,pF,π0,year,a0,a1)
 	# π0 is a NK x 17 probability distribution
 	T = size(pA)[1]
 	NK = size(pA)[2]

@@ -1,5 +1,5 @@
-cd("/Users/FilipB/github/welfare-meta-study/Code")
-#cd("/home/joseph/GitHub/welfare-meta-study/Code")
+#cd("/Users/FilipB/github/welfare-meta-study/Code")
+cd("/home/joseph/GitHub/welfare-meta-study/Code")
 
 using CSV
 using GLM
