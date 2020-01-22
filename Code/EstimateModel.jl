@@ -14,46 +14,30 @@ vlist = [:αc, :αH, :αA, :σH, :σC, :wq, :αWR,:αWR2, :αF]
 
 
 # # first an experiment to see what it takes to fit one site well
-i=2
-vsite1 = [:αc,:αH,:αA,:αF,:β] #,:αWR,:αWR2] #what if we went with just one alphaH
-vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:β,:wq] # :αWR,:αWR2]#,:β]
 
-pars,moms1,moms0 = FitSite(vsite1,site_list,budget,moments,wghts,site_features,i)
-pars,moms1,moms0 = FitSite(pars,vsite2,site_list,budget,moments,wghts,site_features,i)
+# i=2
+# vsite1 = [:αc,:αH,:αA,:αF,:β] #,:αWR,:αWR2] #what if we went with just one alphaH
+# vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:β,:wq] # :αWR,:αWR2]#,:β]
+#
+# pars,moms1,moms0 = FitSite(vsite1,site_list,budget,moments,wghts,site_features,i)
+# pars,moms1,moms0 = FitSite(pars,vsite2,site_list,budget,moments,wghts,site_features,i)
+#
+# colors = ["blue","green","red"]
+# T = site_features.T[i]
+# for a=1:site_features.n_arms[i]
+#     figure("AFDC")
+#     #subplot(2,4,i)
+#     title(String(site_list[i]))
+#     plot(moms0[1:T,a],color=colors[a])
+#     plot(moms1[1:T,a],color=colors[a],linestyle="--")
+#     figure("LFP")
+#     #subplot(2,4,i)
+#     title(String(site_list[i]))
+#     plot(moms0[T+1:2*T,a],color=colors[a])
+#     plot(moms1[T+1:2*T,a],color=colors[a],linestyle="--")
+# end
 
-colors = ["blue","green","red"]
-T = site_features.T[i]
-for a=1:site_features.n_arms[i]
-    figure("AFDC")
-    #subplot(2,4,i)
-    title(String(site_list[i]))
-    plot(moms0[1:T,a],color=colors[a])
-    plot(moms1[1:T,a],color=colors[a],linestyle="--")
-    figure("LFP")
-    #subplot(2,4,i)
-    title(String(site_list[i]))
-    plot(moms0[T+1:2*T,a],color=colors[a])
-    plot(moms1[T+1:2*T,a],color=colors[a],linestyle="--")
-end
 
-break
-Y = budget[site_list[i]]
-Y_I = budget[Symbol(site_list[i],"_I")]
-βgrid = [0.1,0.25,0.5,0.75,0.9,1.]
-π0 = site_features.π0[i,:,:]
-year_meas = site_features.year_meas[i]
-for b in βgrid
-    pars_ = UpdatePars([b],pars,[:β])
-    price = site_features.prices[i,2]
-    TLlength = site_features.TLlength[i,2]
-    Y_I = budget[Symbol(site_list[i],"_I")]
-    moms_ = GetMomentsTimeLims(pars_,Y[2,:,:,:,:],Y_I[2,:,:,:,:],price,1,T,π0,TLlength,year_meas)
-    figure("AFDC")
-    plot(moms_[1:T],linestyle="dotted")
-    figure("LFP")
-    plot(moms_[T+1:2*T],linestyle="dotted")
-end
-break
 vlist0 = [:αc, :αH, :αA, :αWR,:αWR2, :αF]
 opt,x0 = GetOptimization(pars,vlist0,site_list,budget,moments,wghts,site_features)
 #np = length(x0)

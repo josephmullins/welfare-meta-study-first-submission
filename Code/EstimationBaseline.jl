@@ -7,20 +7,20 @@ using PyPlot
 # one idea: do a copy operation each time?
 
 function parameters()
-    np = (αc = 1, gN = 1, gF =1, αH = 35, αA = 8, σH = 8, σC = 1, wq = 1, αWR = 8, αWR2 = 8, αF = 1, αHT = 8, β = 1)
-    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(35), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf*ones(8), αWR2 = -Inf*ones(8), αF = -Inf, αHT = -Inf*ones(8), β = 0.)
-    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(35), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = Inf, αWR = Inf*ones(8), αWR2 = Inf*ones(8), αF = Inf, αHT = Inf*ones(8), β = 1.)
+    np = (αc = 1, gN = 1, gF =1, αH = 8, αA = 8, σH = 8, σC = 1, wq = 1, αWR = 8, αWR2 = 8, αF = 1, αHT = 8, β = 1)
+    lb = (αc = 0., gN = -Inf, gF =-Inf, αH = -Inf*ones(8), αA = -Inf*ones(8), σH = zeros(8), σC = 0., wq = 0., αWR = -Inf, αWR2 = -Inf, αF = -Inf, αHT = -Inf*ones(8), β = 0.)
+    ub = (αc = Inf, gN = Inf, gF =Inf, αH = Inf*ones(8), αA = Inf*ones(8), σH = Inf*ones(8), σC = Inf, wq = Inf, αWR = Inf, αWR2 = Inf, αF = Inf, αHT = Inf*ones(8), β = 1.)
     αc = 1.
     gN = 0.
     gF = 0.
-    αH = zeros(35) #zeros(35)
+    αH = zeros(8) #zeros(35) #zeros(35)
     αA = zeros(8)
     β = 0.9
     σH = ones(8)
     σC = 1.
     wq = 2.
-    αWR = ones(8)
-    αWR2 = ones(8)
+    αWR = 0. #ones(8)
+    αWR2 = 0. #ones(8)
     αF = 0.
     αHT = zeros(8)
     Γ = zeros(18)
@@ -100,8 +100,8 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
         T = site_features.T[i]
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
-        αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc,gN = ones(2)*pars.gN,gF = ones(2)*pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR[i],αWR2 = pars.αWR2[i],αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
+        #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
+        pars_site = (αc = pars.αc,gN = ones(2)*pars.gN,gF = ones(2)*pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF,αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -281,8 +281,8 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
         T = site_features.T[i]
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
-        αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc,gN = pars.gN,gF = pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR[i],αWR2 = pars.αWR2[i],αF = pars.αF,αH = αH,αA = pars.αA[i],Γ=pars.Γ,β=0.)
+        #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
+        pars_site = (αc = pars.αc,gN = pars.gN,gF = pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH[i],αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF,αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
