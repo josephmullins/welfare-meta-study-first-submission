@@ -121,6 +121,8 @@ for i in 1:8
     end
 end
 
+Earnings ./= 12. #<- convert to monthly
+
 
 #=
 SNAP payouts next
@@ -139,7 +141,7 @@ for i in 1:4
     end
 end
 
-
+SNAP ./= 12. #<-convert to monthly
 
 #=
 Poverty Cutoff--this was already annual
@@ -157,7 +159,7 @@ for j in 1:8
 end
 Poverty
 
-
+Poverty ./= 12. #<- convert to monthly
 
 
 #=
@@ -209,6 +211,8 @@ end
 
 Benefit
 
+Benefit ./= 12. #<- convert to monthly
+
 #=
 
  Budget functions!!
@@ -248,7 +252,7 @@ function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
 
     # "correct" the max allotment to ensure AFDC and MFIP non-working get the same payment
     FS = FS - 0.3*max(Ben-134,0)
-    #FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Ben-134,0),0 )
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Ben-134,0),0 )
     D=Ben+FS
     MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
     Welfare= MFIP #(MFIP-FoodStamps)

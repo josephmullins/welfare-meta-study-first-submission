@@ -20,7 +20,7 @@ TLlength = zeros(Int64,8,3); TLlength[1,2] = 2; TLlength[2,2] = 2;
 # below are the distributions across age of youngest 0-2,3-5,6+
 πA = [[37.5 25.4 37.1];
     [43. 27.2 29.8];
-    [52.3 25. 22.7];
+    [4.3 25. 22.7];
     [35.7 35.8 28.5];
     [42.9 25.1 31.9];
     [0. 49.7 50.3];
@@ -51,32 +51,32 @@ site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,price
 
 # ------------ Set up budget function ------------------- #
 # order of budget function is: A x T x NK x 2 x 2
-ctjf = reshape(readdlm("Budgets/CTJF_MAIN"),2,4,4,2,2)/52
-ctjf_fs = reshape(readdlm("Budgets/CTJF_BENEFITS_INELIGIBLE"),2,4,4,2,2)/52 #<- this isn't quite what we want
-ctjf_ben = reshape(readdlm("Budgets/CTJF_BENEFITS"),2,4,4,2,2)/52 #<- this isn't quite what we want
-ctjf_inel = reshape(readdlm("Budgets/CTJF_INELIGIBLE"),2,4,4,2,2)/52
+ctjf = reshape(readdlm("Budgets/CTJF_MAIN"),2,4,4,2,2)/4
+ctjf_fs = reshape(readdlm("Budgets/CTJF_BENEFITS_INELIGIBLE"),2,4,4,2,2)/4 #<- this isn't quite what we want
+ctjf_ben = reshape(readdlm("Budgets/CTJF_BENEFITS"),2,4,4,2,2)/4 #<- this isn't quite what we want
+ctjf_inel = reshape(readdlm("Budgets/CTJF_INELIGIBLE"),2,4,4,2,2)/4
 ctjf_inel[2,:,:,:,1] .= 0
-lagain = reshape(readdlm("Budgets/LAGAIN_MAIN"),2,3,4,2,2)/52
-ftp = reshape(readdlm("Budgets/FTP_MAIN"),2,5,4,2,2)/52
-ftp_inel = reshape(readdlm("Budgets/FTP_INELIGIBLE"),2,5,4,2,2)/52
+lagain = reshape(readdlm("Budgets/LAGAIN_MAIN"),2,3,4,2,2)/4
+ftp = reshape(readdlm("Budgets/FTP_MAIN"),2,5,4,2,2)/4
+ftp_inel = reshape(readdlm("Budgets/FTP_INELIGIBLE"),2,5,4,2,2)/4
 ftp_inel[2,:,:,:,1] .= 0
 # fix mfip budgets
-mfiplr = reshape(readdlm("Budgets/MFIP_LR_MAIN"),2,4,4,2,2)/52
-mfipra = reshape(readdlm("Budgets/MFIP_RA_MAIN"),2,4,4,2,2)/52
+mfiplr = reshape(readdlm("Budgets/MFIP_LR_MAIN"),2,4,4,2,2)/4
+mfipra = reshape(readdlm("Budgets/MFIP_RA_MAIN"),2,4,4,2,2)/4
 # correct mistake in budget formula
-for t=1:4;
-    for k=2:4;
-        earnings = mfiplr[1,t,k,1,2]
-        D = mfiplr[1,t,k,2,1]
-        mfiplr[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-        earnings = mfipra[1,t,k,1,2]
-        D = mfipra[1,t,k,2,1]
-        mfipra[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-    end
-end
-newwsa = reshape(readdlm("Budgets/NEWWS_A_MAIN"),1,5,4,2,2)/52
-newwsg = reshape(readdlm("Budgets/NEWWS_G_MAIN"),1,5,4,2,2)/52
-newwsr = reshape(readdlm("Budgets/NEWWS_R_MAIN"),1,5,4,2,2)/52
+# for t=1:4;
+#     for k=2:4;
+#         earnings = mfiplr[1,t,k,1,2]
+#         D = mfiplr[1,t,k,2,1]
+#         mfiplr[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+#         earnings = mfipra[1,t,k,1,2]
+#         D = mfipra[1,t,k,2,1]
+#         mfipra[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
+#     end
+# end
+newwsa = reshape(readdlm("Budgets/NEWWS_A_MAIN"),1,5,4,2,2)/4
+newwsg = reshape(readdlm("Budgets/NEWWS_G_MAIN"),1,5,4,2,2)/4
+newwsr = reshape(readdlm("Budgets/NEWWS_R_MAIN"),1,5,4,2,2)/4
 budget = (CTJF = ctjf, FTP = ftp, LAGAIN = lagain, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr,FTP_I = ftp_inel,CTJF_I = ctjf_inel)
 num_sites = 8
 
