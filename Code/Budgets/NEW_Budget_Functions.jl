@@ -1,5 +1,5 @@
-#cd("/Users/FilipB/github/welfare-meta-study/Code")
-cd("/home/joseph/GitHub/welfare-meta-study/Code")
+cd("/Users/FilipB/github/welfare-meta-study/Code")
+#cd("/home/joseph/GitHub/welfare-meta-study/Code")
 
 using CSV
 using GLM
@@ -224,8 +224,10 @@ function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefi
         Ben=Benefit[nk,site,q]
 
 
-    Welfare=participation*(max(Ben-(1-0.33)*max(earnings-120,0),0))
-    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
+
+        # multiplying deductions by 12--lets us view the old monthly numbers
+    Welfare=participation*(max(Ben-(1-0.33)*max(earnings-120*12,0),0))
+    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134*12,0),0))
     Budget=Welfare+FoodStamps+earnings
 
     Benefits=Welfare+FoodStamps
@@ -247,18 +249,29 @@ function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
     #Benefits=Welfare+FoodStamps
 
     # "correct" the max allotment to ensure AFDC and MFIP non-working get the same payment
-    FS = FS - 0.3*max(Ben-134,0)
-    #FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Ben-134,0),0 )
-    D=Ben+FS
+    FS_MFIP = FS - 0.3*max(Ben-134*12,0) # modified food stamps for MFIP
+    FS_AFDC=max(FS-0.3*max(0.8*earnings-134*12,0),0 ) # AFDC rules
+
+    D=Ben+FS_MFIP
     MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-    Welfare= MFIP #(MFIP-FoodStamps)
+
+    Welfare=0
+
+    if nk==1
+        Welfare=FS_AFDC
+    else
+        Welfare= MFIP 
+
+    end
+
     Budget=earnings+ participation*Welfare#+FoodStamps
     Benefits=Welfare#+FoodStamps
+
 
     # code for case in which just getting food stamps should be added
 
 
-    return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FoodStamps, Benefits=Benefits)
+    return MFIP=(Budget=Budget, Welfare=Welfare, FoodStamps=FS, Benefits=Benefits)
 end
 
 
@@ -277,8 +290,8 @@ function CTJF(q, nk, earnings,participation; Pov_Guidelines=Poverty, Benefit=Ben
         TooRich=1
     end
 
-    FoodStamps=participation*(max(FS-0.3*max(TooRich*earnings+Ben-134,0),0 )+
-                    (1-eligible)*max(FS-0.3*max(0.8*earnings-134,0),0 ))
+    FoodStamps=participation*(max(FS-0.3*max(TooRich*earnings+Ben-134*12,0),0 )+
+                    (1-eligible)*max(FS-0.3*max(0.8*earnings-134*12,0),0 ))
 
     Welfare=Ben*participation*(1-TooRich)*eligible
 
@@ -297,8 +310,8 @@ function FTP(q, nk, earnings,participation; Benefit=Benefit, SNAP=SNAP, eligible
         FS=SNAP[nk,2, q]
         Ben=Benefit[nk,2,q]
 
-    Welfare=participation*eligible*max(Ben-0.5*max(earnings-200,0),0)
-    FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Welfare-134,0),0 )
+    Welfare=participation*eligible*max(Ben-0.5*max(earnings-200*12,0),0)
+    FoodStamps=participation*max(FS-0.3*max(0.8*earnings+Welfare-134*12,0),0 )
     Budget=earnings+Welfare+FoodStamps
     Benefits=Welfare+FoodStamps
 
@@ -326,8 +339,8 @@ function LA_GAIN(year, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP, 
         MaxBen=cal.MaxBenefit[1]
     end
 
-    Welfare=participation*max(  min(MaxBen, NST-(1-0.33)*max(earnings-120,0)),0)
-    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
+    Welfare=participation*max(  min(MaxBen, NST-(1-0.33)*max(earnings-120*12,0)),0)
+    FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134*12,0),0))
     Budget=Welfare+FoodStamps+earnings
     Benefits=Welfare+FoodStamps
 
