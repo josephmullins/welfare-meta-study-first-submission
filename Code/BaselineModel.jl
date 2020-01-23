@@ -170,3 +170,84 @@ function GetMeanCare(year,a0,a1,pA,pWork,pF,π0)
 	end
 	return numerator/denom
 end
+
+function GetChildOutcomesStatic(year_meas,pA,pWork,pF,Y,pars_prod,pars)
+	NK = size(pA)[2]
+	TH = zeros(Real,NK,17)
+	for nk=1:NK
+		for a0 = 0:16
+			th = 0
+			for t=1:year_meas
+				age = a0+t-1
+				I = zeros(Real,2)
+				if age<=17
+					if age<=5
+						gN,gF,δI = pars_prod.gN[1],pars_prod.gN[1],pars_prod.δI[1]
+					else
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[1]
+					end
+					for p=0:1
+						If = log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) - gF
+						In = log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
+						Im = log(Y[t,nk+1,1+p,1] + 112*pars.wq)
+						I[p+1] += Im + pWork[t,nk,age+1,p+1]*(In + pF[t,nk,age+1,p+1]*(If-In)-Im)
+					end
+					th = δI*(I[1] + pA[t,nk,age+1]*(I[2]-I[1])) + pars_prod.δθ*th
+				end
+			end
+			TH[nk,a0] = th
+		end
+	end
+	return TH
+end
+
+function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,pars_prod,pars)
+	NK = size(pA)[2]
+	TH = zeros(Real,NK,17)
+	TLlength = size(pA)[4]-1
+	for nk=1:NK
+		for a0 = 0:16
+			th = 0
+			π1 = zeros(Real,year_meas+1,TLlength+1)
+			π1[1,1] = 1.
+			for t=1:year_meas
+				age = a0+t-1
+				Imean = 0
+				if age<=17
+					if age<=5
+						gN,gF,δI = pars_prod.gN[1],pars_prod.gN[1],pars_prod.δI[1]
+					else
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[2]
+					end
+					# case: time limit not reached yet
+					for w=1:TLlength
+						I = zeros(Real,2)
+						for p=0:1
+							If = log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) - gF
+							In = log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
+							Im = log(Y[t,nk+1,1+p,1] + 112*pars.wq)
+							I[p+1] += Im + pWork[t,nk,age+1,w,p+1]*(In + pF[t,nk,age+1,w,p+1]*(If-In)-Im)
+						end
+						Imean += π1[t,w]*(I[1]+ pA[t,nk,w,age+1]*(I[2]-I[1]))
+						π1[t+1,w] += π1[t,w]*(1-pA[t,nk,age+1,w])
+						π1[t+1,w+1] += π1[t,w]*pA[t,nk,age+1,w]
+					end
+					# case: time limit reached, update
+					w_ = TLlength+1
+					I = zeros(Real,2)
+					for p=0:1
+						If = log(Y_I[t,nk+1,1+p,2]+(112-30)*pars.wq-price) - gF
+						In = log(Y_I[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
+						Im = log(Y_I[t,nk+1,1+p,1] + 112*pars.wq)
+						I[p+1] += Im + pWork[t,nk,age+1,w_,p+1]*(In + pF[t,nk,age+1,w_,p+1]*(If-In)-Im)
+					end
+					Imean += π1[t,w_]*(I[1]+ pA[t,nk,w_,age+1]*(I[2]-I[1]))
+					π1[t+1,w_] += π1[t,w_]
+					th = δI*Imean + pars_prod.δθ*th
+				end
+			end
+			TH[nk,a0] = th
+		end
+	end
+	return TH
+end

@@ -10,7 +10,7 @@ using NLopt
 #pars = (αc=1. ,gN = 0. *ones(2), gF = ones(2)*0.2,wq = 2.,σC = 1.,σH = 1.,αWR = 0.5,αF = 2., αA = 1. *ones(num_sites),αH=1. *ones(num_sites),Γ=Γ,β=0.)
 
 pars = parameters()
-vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β]
+vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq]
 
 
 # # first an experiment to see what it takes to fit one site well
@@ -18,6 +18,7 @@ vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β]
 # i=2
 # vsite1 = [:αc,:αH,:αA,:αF,:β] #,:αWR,:αWR2] #what if we went with just one alphaH
 # vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:β,:wq] # :αWR,:αWR2]#,:β]
+# vsite2 = [:αc,:αH,:αA,:σH,:σC,:αF,:wq,:αWR,:αWR2] # :αWR,:αWR2]#,:β]
 #
 # pars,moms1,moms0 = FitSite(vsite1,site_list,budget,moments,wghts,site_features,i)
 # pars,moms1,moms0 = FitSite(pars,vsite2,site_list,budget,moments,wghts,site_features,i)
@@ -53,14 +54,15 @@ opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features
 res2 = optimize(opt,x0)
 pars2 = UpdatePars(res2[2],pars,vlist)
 
-vlist2 = [vlist;:wq]
-opt,x0=GetOptimization(pars2,vlist2,site_list,budget,moments,wghts,site_features)
-res2 = optimize(opt,x0)
-pars2 = UpdatePars(res2[2],pars,vlist2)
+# vlist2 = [vlist;:wq]
+# opt,x0=GetOptimization(pars2,vlist2,site_list,budget,moments,wghts,site_features)
+# res2 = optimize(opt,x0)
+# pars2 = UpdatePars(res2[2],pars,vlist2)
 
 
 moms=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
-InspectTreatFit(moms2,moments,site_features,site_list)
+#InspectTreatFit(moms,moments,site_features,site_list)
+InspectModelFit(moms,moments,site_features,site_list)
 
 break
 opt,x0 = GetOptimization(pars,[:αH],site_list,budget,moments,wghts,site_features)
