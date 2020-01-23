@@ -50,6 +50,10 @@ function UpdatePars(x,pars,vars::Array{Symbol,1})
     return (;zip(allvars,vals)...)
 end
 
+function GetSitePars(pars,i)
+    return (αc = pars.αc[i],gN = pars.gN,gF = pars.gF,wq = pars.wq[i],σC = pars.σC,σH = pars.σH,αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF[i],αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
+end
+
 function GetOptimization(pars,vars,site_list,budget,moments,wghts,site_features)
     np = 0;
 	for s in vars
@@ -101,7 +105,7 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
         #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc[i],gN = ones(2)*pars.gN,gF = ones(2)*pars.gF,wq = pars.wq[i],σC = pars.σC,σH = pars.σH,αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF[i],αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
+        pars_site = GetSitePars(pars,i)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -282,7 +286,7 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
         #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = (αc = pars.αc[i],gN = pars.gN,gF = pars.gF,wq = pars.wq[i],σC = pars.σC,σH = pars.σH,αWR = pars.αWR,αWR2 = pars.αWR2,αF = pars.αF[i],αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
+        pars_site = GetSitePars(pars,i)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -305,6 +309,42 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
         append!(moms_collect,[moms_model])
     end
     return (;zip(site_list,moms_collect)...)
+end
+
+function GetChoiceProbsAll(pars,site_list,budget,moments,wghts,site_features)
+    probs_collect = []
+    for i=1:length(site_list)
+        yb = site_features.yb[i]
+        T = site_features.T[i]
+        #years = (yb+1-1991):(yb-1991+T)
+        #pos = sum(site_features.T[1:i-1])
+        #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
+        pars_site = GetSitePars(pars,i)
+        sname = site_list[i]
+        Y = getfield(budget,sname)
+        Abar = size(Y)[1]
+        PA = []
+        PW = []
+        PF = []
+        for a = 1:site_features.n_arms[i]
+            WR = site_features.work_reqs[i,a]
+            price = site_features.prices[i,a]
+            abar = min(Abar,a)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                pA,pWork,pF = GetDynamicProbs(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,NK,TLlength)
+            else
+                pA,pWork,pF = GetStaticProbs(pars_site,Y[abar,:,:,:,:],price,WR,T,NK)
+            end
+            append!(PA,[pA])
+            append!(PW,[pWork])
+            append!(PF,[pF])
+        end
+        P = (pA = PA, pWork = PW, pF = PF)
+        append!(probs_collect,[P])
+    end
+    return (;zip(site_list,probs_collect)...)
 end
 
 

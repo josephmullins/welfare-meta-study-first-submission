@@ -201,7 +201,8 @@ function GetChildOutcomesStatic(year_meas,pA,pWork,pF,Y,pars_prod,pars)
 	return TH
 end
 
-function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,pars_prod,pars)
+# NEXT: replace with wq and price (then don't need)
+function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,Y_I,pars_prod,pars)
 	NK = size(pA)[2]
 	TH = zeros(Real,NK,17)
 	TLlength = size(pA)[4]-1
@@ -249,5 +250,6 @@ function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,pars_prod,pars)
 			TH[nk,a0] = th
 		end
 	end
+
 	return TH
 end
