@@ -293,7 +293,7 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
         π0 = site_features.π0[i,:,:]
         year_meas = site_features.year_meas[i]
         Abar = size(Y)[1]
-        moms_model = zeros(size(moms))
+        moms_model = []
         for a = 1:site_features.n_arms[i]
             WR = site_features.work_reqs[i,a]
             price = site_features.prices[i,a]
@@ -301,9 +301,9 @@ function GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
             if site_features.time_limits[i,a]==1
                 Y_I = budget[Symbol(sname,"_I")]
                 TLlength = site_features.TLlength[i,a]
-                moms_model[:,a] = GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+                append!(moms_model,[GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas,true)])
             else
-                moms_model[:,a] = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+                append!(moms_model,[GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas,true)])
             end
         end
         append!(moms_collect,[moms_model])
@@ -355,64 +355,117 @@ function Criterion(x,g,pars,vars,site_list,budget,moments,wghts,site_features)
     return f0
 end
 
-function GetMoments(pars,Y,price,WR,T,π0,year_meas)
+function GetMoments(pars,Y,price,WR,T,π0,year_meas,wrapped=false)
     NK = size(π0)[1]
     pA,pWork,pF = GetStaticProbs(pars,Y,price,WR,T,NK)
-    EA,EH = GetAggMoments(pA,pWork,π0)
+    EA,EH,Inc = GetAggMoments(pA,pWork,π0,Y)
     Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
-    return [EA; EH; Care]
+    if wrapped
+        return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
+    else
+        return [EA; EH; Care]
+    end
 end
 
-function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas)
+function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas,wrapped=false)
     NK = size(π0)[1]
     pA,pWork,pF = GetDynamicProbs(pars,Y,Y_I,price,WR,T,NK,TLlength)
-    EA,EH,Care = GetDynamicMoments(pA,pWork,pF,π0,year_meas,0,9)
+    EA,EH,Care,Inc = GetDynamicMoments(pA,pWork,pF,π0,year_meas,0,9,Y,Y_I)
     #EA,EH = GetAggMoments(pA,pWork,π0)
     #Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
-    return [EA; EH; Care]
+    if wrapped
+        return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
+    else
+        return [EA; EH; Care]
+    end
 end
 
+#
+# function InspectTreatFit(model_moments,data_moments,site_features,site_list)
+#     colors = ["red","green","blue"]
+#     for i=1:8
+#         T = site_features.T[i]
+#         moms0 = getfield(model_moments,site_list[i])
+#         moms1 = getfield(data_moments,site_list[i])
+#         for a=2:site_features.n_arms[i]
+#             figure("AFDC")
+#             subplot(2,4,i)
+#             title(String(site_list[i]))
+#             plot(moms0[1:T,a] .- moms0[1:T,1],color=colors[a])
+#             plot(moms1[1:T,a] .- moms1[1:T,1],color=colors[a],linestyle="--")
+#             figure("LFP")
+#             subplot(2,4,i)
+#             title(String(site_list[i]))
+#             plot(moms0[T+1:2*T,a] .- moms0[T+1:2*T,1],color=colors[a])
+#             plot(moms1[T+1:2*T,a] .- moms1[T+1:2*T,1],color=colors[a],linestyle="--")
+#             figure("Scatter")
+#             scatter(moms0[:,a] .- moms0[:,1],moms1[:,a] .- moms1[:,1],color="blue")
+#         end
+#     end
+# end
 
-function InspectTreatFit(model_moments,data_moments,site_features,site_list)
-    colors = ["red","green","blue"]
+# function InspectModelFit(model_moments,data_moments,site_features,site_list)
+#     colors = ["red","green","blue"]
+#     for i=1:8
+#         T = site_features.T[i]
+#         moms0 = getfield(model_moments,site_list[i])
+#         moms1 = getfield(data_moments,site_list[i])
+#         for a=1:site_features.n_arms[i]
+#             figure("AFDC")
+#             subplot(2,4,i)
+#             title(String(site_list[i]))
+#             plot(moms0[1:T,a],color=colors[a])
+#             plot(moms1[1:T,a],color=colors[a],linestyle="--")
+#             figure("LFP")
+#             subplot(2,4,i)
+#             title(String(site_list[i]))
+#             plot(moms0[T+1:2*T,a],color=colors[a])
+#             plot(moms1[T+1:2*T,a],color=colors[a],linestyle="--")
+#         end
+#     end
+# end
+
+function InspectModelFit(model_moments,data_moments,site_features,site_list)
+    colors = ["blue","green","red"]
     for i=1:8
         T = site_features.T[i]
-        moms0 = getfield(model_moments,site_list[i])
-        moms1 = getfield(data_moments,site_list[i])
-        for a=2:site_features.n_arms[i]
-            figure("AFDC")
-            subplot(2,4,i)
-            title(String(site_list[i]))
-            plot(moms0[1:T,a] .- moms0[1:T,1],color=colors[a])
-            plot(moms1[1:T,a] .- moms1[1:T,1],color=colors[a],linestyle="--")
-            figure("LFP")
-            subplot(2,4,i)
-            title(String(site_list[i]))
-            plot(moms0[T+1:2*T,a] .- moms0[T+1:2*T,1],color=colors[a])
-            plot(moms1[T+1:2*T,a] .- moms1[T+1:2*T,1],color=colors[a],linestyle="--")
-            figure("Scatter")
-            scatter(moms0[:,a] .- moms0[:,1],moms1[:,a] .- moms1[:,1],color="blue")
+        sname = site_list[i]
+        moms0 = getfield(data_moments,sname)
+        moms1 = getfield(model_moments,sname)
+        for a=1:site_features.n_arms[i]
+            for v in [:Part,:LFP,:Inc]
+                figure(String(v))
+                subplot(2,4,i)
+                title(String(sname))
+                plot(moms0[a][v],color=colors[a])
+                plot(moms1[a][v],color=colors[a],linestyle="--")
+            end
         end
     end
 end
 
-function InspectModelFit(model_moments,data_moments,site_features,site_list)
-    colors = ["red","green","blue"]
+function InspectTreatFit(model_moments,data_moments,site_features,site_list)
+    colors = ["blue","green","red"]
     for i=1:8
         T = site_features.T[i]
-        moms0 = getfield(model_moments,site_list[i])
-        moms1 = getfield(data_moments,site_list[i])
-        for a=1:site_features.n_arms[i]
-            figure("AFDC")
-            subplot(2,4,i)
-            title(String(site_list[i]))
-            plot(moms0[1:T,a],color=colors[a])
-            plot(moms1[1:T,a],color=colors[a],linestyle="--")
-            figure("LFP")
-            subplot(2,4,i)
-            title(String(site_list[i]))
-            plot(moms0[T+1:2*T,a],color=colors[a])
-            plot(moms1[T+1:2*T,a],color=colors[a],linestyle="--")
+        sname = site_list[i]
+        moms0 = getfield(data_moments,sname)
+        moms1 = getfield(model_moments,sname)
+        for a=2:site_features.n_arms[i]
+            for v in [:Part,:LFP,:Inc]
+                figure(String(v))
+                subplot(2,4,i)
+                title(String(sname))
+                plot(moms0[a][v] .- moms0[1][v],color=colors[a])
+                plot(moms1[a][v] .- moms1[1][v],color=colors[a],linestyle="--")
+                if v==:Inc
+                    color_="pink"
+                else
+                    color_="blue"
+                end
+                figure("Scatter")
+                scatter(moms0[a][v] .- moms0[1][v],moms1[a][v] .- moms1[1][v],color=color_)
+            end
         end
     end
 end

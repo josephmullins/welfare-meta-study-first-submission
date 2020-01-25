@@ -9,6 +9,8 @@ C = CSV.read("../Data/ChildCareMoms_estimated.csv")
 num_sites = 8
 site_list = [:CTJF,:FTP,:LAGAIN,:MFIPLR,:MFIPRA,:NEWWSA,:NEWWSG,:NEWWSR]
 site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
+site_str2 = ["CTJF","FTP","LA-GAIN","MFIP-LR","MFIP-RA","Atlanta","GR","Riverside"]
+
 n_arms = [2,2,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to time limits
 work_reqs = [zeros(8) [1,0,1,1,1,1,1,1] zeros(8)]
 years = [4,4,3,4,4,5,5,5]
@@ -165,3 +167,19 @@ end
 moments = (CTJF = ctjf, FTP = ftp, LAGAIN = LA, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr)
 # later one we can let the relative sample sizes inform the weights if we want
 wghts = (CTJF = w_ctjf, FTP = w_ftp, LAGAIN = w_LA, MFIPLR = w_mfiplr, MFIPRA = w_mfipra, NEWWSA = w_newwsa, NEWWSG = w_newwsg, NEWWSR = w_newwsr)
+
+moms_collect = []
+for i=1:8
+    sname = site_list[i]
+    moms = []
+    T = site_features.T[i]
+    println(sname)
+    for a = 1:site_features.n_arms[i]
+        d = D[(D.Site.==site_str2[i]) .& (D.Treatment.==(a-1)),:]
+        d = d[1:T,:]
+        c = C[(C.Site.==site_str[i]) .& (C.Arm.==(a-1)),:]
+        append!(moms,[(Part = d.Participation/100,LFP = d.LFP/100,Care = c.UsePaid[1],Inc = d.TotInc/52)])
+    end
+    append!(moms_collect,[moms])
+end
+data_moments = (;zip(site_list,moms_collect)...)

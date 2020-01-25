@@ -5,7 +5,7 @@ using Distributions
 
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 
-measures = [:Achievement,:AchieveBelowAverage,:BPI,:PB]
+measures = [:Achievement,:AchieveBelowAverage,:BPI,:PB,:Repeat]
 J = length(measures)
 V = zeros(J,J)
 

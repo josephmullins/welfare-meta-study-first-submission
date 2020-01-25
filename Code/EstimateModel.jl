@@ -62,7 +62,7 @@ pars2 = UpdatePars(res2[2],pars,vlist)
 
 moms=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 #InspectTreatFit(moms,moments,site_features,site_list)
-InspectModelFit(moms,moments,site_features,site_list)
+InspectModelFit(moms,data_moments,site_features,site_list)
 
 break
 opt,x0 = GetOptimization(pars,[:αH],site_list,budget,moments,wghts,site_features)
