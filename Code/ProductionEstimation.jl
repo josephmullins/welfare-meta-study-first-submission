@@ -4,11 +4,13 @@ function ProdPars(nmeas)
     np = (δI = 2,gN = 2, gF = 2, δθ=1, λ=nmeas-1)
     lb = (δI = zeros(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
     ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = Inf, λ = Inf*ones(nmeas-1))
-    δI = 0.1*ones(2)
-    gN = zeros(2)
-    gF = zeros(2)
-    δθ = 0.9
-    λ = zeros(nmeas-1)
+    δI = 5*ones(2)
+    gN = [0.,1]; #log.([2.5,2.5])
+    gF = log.([0.7,0.7])
+    δθ = 0.5
+    #λ = zeros(nmeas-1)
+    λ = ones(nmeas-1)
+    #λ = [2.3,-2.48,2.85,-2.9,1.29]
     return (np=np,lb=lb,ub=ub,δI=δI,gN=gN,gF=gF,δθ=δθ,λ=λ)
 end
 
@@ -24,9 +26,9 @@ function TreatmenEffects(TH,π0,a0,a1,arms)
     return means
 end
 
-function GetOptimization(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+function GetOptimization(vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
     np = 0;
-    vars = [:gN,:gF,:δI,:δθ,:λ]
+    #vars = [:gN,:gF,:δI,:δθ,:λ]
 	for s in vars
 		np += pars_prod.np[s]
 	end
@@ -52,19 +54,19 @@ function GetOptimization(pars_prod,pars,ChoiceProbs,site_list,budget,moments,sit
 	end
 	lower_bounds!(opt,lb)
 	upper_bounds!(opt,ub)
-	min_objective!(opt,(x,g)->ProductionCriterion(x,g,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features))
+	min_objective!(opt,(x,g)->ProductionCriterion(x,g,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features))
     return opt,x0
 end
 
-function ProductionCriterion(x,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
-    vlist = [:gN,:gF,:δI,:δθ,:λ]
-    pars_prod = UpdatePars(x,pars_prod,vlist)
+function ProductionCriterion(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    #vlist = [:gN,:gF,:δI,:δθ,:λ]
+    pars_prod = UpdatePars(x,pars_prod,vars)
     return ProductionCriterion(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
 end
 
-function ProductionCriterion(x,g,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
-    f0 = ProductionCriterion(x,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
-    dF = ForwardDiff.gradient(x->ProductionCriterion(x,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features),x)
+function ProductionCriterion(x,g,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    f0 = ProductionCriterion(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    dF = ForwardDiff.gradient(x->ProductionCriterion(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features),x)
     g[:] = dF
     return f0
 end
@@ -76,6 +78,7 @@ function ProductionCriterion(pars_prod,pars,ChoiceProbs,site_list,budget,moments
     λ = [1;pars_prod.λ]
     for i=1:length(site_list)
         sname = site_list[i]
+        #println(sname)
         moms = getfield(moments,sname) #<- structure: age0,age1,1
         nmom = size(moms.TE)[1]
         π0 = site_features.π0[i,:,:]
@@ -108,4 +111,89 @@ function ProductionCriterion(pars_prod,pars,ChoiceProbs,site_list,budget,moments
         end
     end
     return Qn
+end
+
+function GetTreatmentEffects(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    Qn = 0
+    NK=3 # might want to update this later
+    λ = [1;pars_prod.λ]
+    colors = ["blue","red","green","pink","purple","orange","black"]
+    TE_collect = []
+    for i=1:length(site_list)
+        sname = site_list[i]
+        #println(sname)
+        moms = getfield(moments,sname) #<- structure: age0,age1,1
+        nmom = size(moms.TE)[1]
+        π0 = site_features.π0[i,:,:]
+        #wght = getfield(wghts,sname)
+        year_meas = site_features.year_meas[i]
+        Y = getfield(budget,sname)
+        P = getfield(ChoiceProbs,sname)
+        TH = zeros(Real,site_features.n_arms[i],NK,17)
+        price = site_features.prices[i,1]
+        TH[1,:,:] =  GetChildOutcomesStatic(year_meas,P.pA[1],P.pWork[1],P.pF[1],Y[1,:,:,:,:],pars_prod,price,pars.wq)
+
+        Abar = size(Y)[1]
+        #moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+        #Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
+        for a = 2:site_features.n_arms[i]
+            WR = site_features.work_reqs[i,a]
+            price = site_features.prices[i,a]
+            abar = min(Abar,a)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                TH[a,:,:] = GetChildOutcomesDynamic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],pars_prod,price,pars.wq)
+            else
+                TH[a,:,:] = GetChildOutcomesStatic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],pars_prod,price,pars.wq)
+            end
+        end
+        TE = TreatmenEffects(TH,π0,moms.a0,moms.a1,moms.arm)
+        append!(TE_collect,[TE])
+    end
+    return (;zip(site_list,TE_collect)...)
+end
+
+function InspectTreatFitProduction!(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    Qn = 0
+    NK=3 # might want to update this later
+    λ = [1;pars_prod.λ]
+    colors = ["blue","red","green","pink","purple","orange","black"]
+    for i=1:length(site_list)
+        sname = site_list[i]
+        #println(sname)
+        moms = getfield(moments,sname) #<- structure: age0,age1,1
+        nmom = size(moms.TE)[1]
+        π0 = site_features.π0[i,:,:]
+        #wght = getfield(wghts,sname)
+        year_meas = site_features.year_meas[i]
+        Y = getfield(budget,sname)
+        P = getfield(ChoiceProbs,sname)
+        TH = zeros(Real,site_features.n_arms[i],NK,17)
+        price = site_features.prices[i,1]
+        TH[1,:,:] =  GetChildOutcomesStatic(year_meas,P.pA[1],P.pWork[1],P.pF[1],Y[1,:,:,:,:],pars_prod,price,pars.wq)
+
+        Abar = size(Y)[1]
+        #moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+        #Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
+        for a = 2:site_features.n_arms[i]
+            WR = site_features.work_reqs[i,a]
+            price = site_features.prices[i,a]
+            abar = min(Abar,a)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                TH[a,:,:] = GetChildOutcomesDynamic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],pars_prod,price,pars.wq)
+            else
+                TH[a,:,:] = GetChildOutcomesStatic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],pars_prod,price,pars.wq)
+            end
+        end
+        TE = TreatmenEffects(TH,π0,moms.a0,moms.a1,moms.arm)
+        #plt.scatter(TE,moms.TE[:,1],color="blue")
+        for k=1:size(moms.TE)[2]
+            #Qn += sum(moms.wght[:,k].*(λ[k]*TE .- moms.TE[:,k]).^2)
+            ii = moms.wght[:,k].>0
+            plt.scatter(λ[k]*TE[ii].*sqrt.(moms.wght[ii,k]), moms.TE[ii,k],color=colors[k])
+        end
+    end
 end
