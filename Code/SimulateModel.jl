@@ -1,5 +1,11 @@
 using Revise
 using Distributions
+using Random
+using Optim
+using Distributed
+using SharedArrays
+nprocs()
+rmprocs()
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 includet("BaselineModel.jl")
 includet("EstimationBaseline.jl")
@@ -49,7 +55,6 @@ function draw_kids(π0, site,site_features)
     for i in 2:3
         prob_nk[i]=sum(π01[i,:])+prob_nk[i-1]
     end
-    prob_nk
     nk_draw=rand(Uniform())
     nk=0
 
@@ -71,13 +76,13 @@ function draw_kids(π0, site,site_features)
     for i in 2:17
         prob_age[i]=π02[i]+prob_age[i-1]
     end
-    prob_age
+
     age_draw=rand(Uniform())
     A2=zeros(17)
     for i in 1:17
         A2[i]=ifelse(age_draw>=prob_age[i],1.0,0) # A2[i]=1 if weakly older than age i
     end
-    A2
+
     age=convert(Int,sum(A2))+1 # sum A2 vector to get age INDEX
 
     return nk, age
@@ -137,45 +142,60 @@ decisions_dynamic(1,2,3,1,pA2,pWork2,pF2)
 
 
 
-
+A_mat1=SharedArray{Float64}(10,10)
+1+1
 
 function Moments_Simulated_Static(nsims, pA,pF,pWork, π1, sample_size_site,T, site,site_features)
 
     A_mat=zeros(T,nsims, sample_size_site)
     A_sims=zeros(T,nsims)
     A=zeros(T)
+    #A_mat=SharedArray{Float64}(T,nsims, sample_size_site)
+    #A_sims=SharedArray{Float64}(T,nsims)
+    #A=SharedArray{Float64}(T)
 
     W_mat=zeros(T,nsims, sample_size_site)
     W_mat_2=zeros(T,nsims, sample_size_site) # for childcare calculation
     W_sims=zeros(T,nsims)
     W=zeros(T)
 
+    #W_mat=SharedArray{Float64}(T,nsims, sample_size_site)
+    #W_mat_2=SharedArray{Float64}(T,nsims, sample_size_site) # for childcare calculation
+    #W_sims=SharedArray{Float64}(T,nsims)
+    #W=SharedArray{Float64}(T)
+
     F_mat=zeros(T,nsims, sample_size_site)
-    F0=0
-    F=0
+    #F0=0
+    #F=0
+
+    #F_mat=SharedArray{Float64}(T,nsims, sample_size_site)
+    #F0=0
+    #F=0
+
+
     # note: only give benefits if kids aged 0-9, aka indices 1-10
-    for n in 1:nsims
-        for i in 1:sample_size_site
-            nk, age=draw_kids(π1,site,site_features)
-            a=age
-            for t in 1:T
-                A_mat[t,n,i],W_mat[t,n,i],F0=decisions_static(t,nk, age,pA,pWork,pF)
-                a+=1
-                if (a>=1) & (a<=10)
-                    F_mat[t,n,i]=F0
-                    W_mat_2[t,n,i]=W_mat[t,n,i]
-                end
-            end
+    @inbounds @simd for n in 1:nsims
+        @inbounds @simd  for i in 1:sample_size_site
+                                nk, age=draw_kids(π1,site,site_features)
+                                a=age
+                                    @inbounds  for t in 1:T
+                                                    A_mat[t,n,i],W_mat[t,n,i],F0=decisions_static(t,nk, age,pA,pWork,pF)
+                                                    if (a>=1) & (a<=10)
+                                                    F_mat[t,n,i]=F0
+                                                    W_mat_2[t,n,i]=W_mat[t,n,i]
+                                                    end
+                                                    a+=1
+                                                end
         end
     end
     # aggregate the moments
-    for t in 1:T
-        for n in 1:nsims
-        A_sims[t,n]=mean(A_mat[t,n,:])
-        W_sims[t,n]=mean(W_mat[t,n,:])
+    @inbounds @simd for t in 1:T
+        @inbounds @simd for n in 1:nsims
+            A_sims[t,n]=mean(A_mat[t,n,:])
+            W_sims[t,n]=mean(W_mat[t,n,:])
         end
-        A[t]=mean(A_sims[t,:])
-        W[t]=mean(W_sims[t,:])
+            A[t]=mean(A_sims[t,:])
+            W[t]=mean(W_sims[t,:])
     end
     F=sum(F_mat)/sum(W_mat_2)
 
@@ -183,7 +203,7 @@ function Moments_Simulated_Static(nsims, pA,pF,pWork, π1, sample_size_site,T, s
 end
 @time A,W,F=Moments_Simulated_Static(2,pA1,pF1,pWork1, π01, sample_size[1],4,1,site_features)
 @time Moments_Simulated_Static(2,pA1,pF1,pWork1, π01, sample_size[1],4,1,site_features)
-
+mom_d=[A;W;F]
 
 function Moments_Simulated_Dynamic(nsims, pA,pF,pWork, π1, sample_size_site,T, site, tlsite,site_features)
     A_mat=zeros(T,nsims, sample_size_site)
@@ -196,37 +216,34 @@ function Moments_Simulated_Dynamic(nsims, pA,pF,pWork, π1, sample_size_site,T, 
     W=zeros(T)
 
     F_mat=zeros(T,nsims, sample_size_site)
-    F_0=0
-    F=0
-
 
     # child care only for kids in ages 0:9
-    for n in 1:nsims
-        for i in 1:sample_size_site
-            tl=1
-            nk, age=draw_kids(π1,site,site_features)
-            a=age
-            for t in 1:T
-                A_mat[t,n,i],W_mat[t,n,i],F0=decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
-                a+=1
-                if (a>=1) & (a<=10)
-                    F_mat[t,n,i]=F0
-                    W_mat_2[t,n,i]=W_mat[t,n,i]
-                end
-                if A_mat[t,n,i]==1
-                    tl=min(tl+1,tlsite)
-                end
-            end
+    @inbounds @simd for n in 1:nsims
+         @inbounds @simd for i in 1:sample_size_site
+                            tl=1
+                            nk, age=draw_kids(π1,site,site_features)
+                            a=age
+                                @inbounds for t in 1:T
+                                        A_mat[t,n,i],W_mat[t,n,i],F0=decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
+                                            if (a>=1) & (a<=10)
+                                                    F_mat[t,n,i]=F0
+                                                    W_mat_2[t,n,i]=W_mat[t,n,i]
+                                                end
+                                            if A_mat[t,n,i]==1
+                                                tl=min(tl+1,tlsite)
+                                            end
+                                            a+=1
+                                        end
         end
     end
-    for t in 1:T
-        for n in 1:nsims
-        A_sims[t,n]=mean(A_mat[t,n,:])
-        W_sims[t,n]=mean(W_mat[t,n,:])
-        end
-        A[t]=mean(A_sims[t,:])
-        W[t]=mean(W_sims[t,:])
-    end
+    @inbounds @simd for t in 1:T
+        @inbounds @simd for n in 1:nsims
+                            A_sims[t,n]=mean(A_mat[t,n,:])
+                            W_sims[t,n]=mean(W_mat[t,n,:])
+                        end
+                            A[t]=mean(A_sims[t,:])
+                            W[t]=mean(W_sims[t,:])
+                    end
 
     F=sum(F_mat)/sum(W_mat_2)
 
@@ -234,15 +251,15 @@ function Moments_Simulated_Dynamic(nsims, pA,pF,pWork, π1, sample_size_site,T, 
 
 end
 @time A,W,F=Moments_Simulated_Dynamic(2,pA2,pF2,pWork2, π01, sample_size[1],4,1,3,site_features)
-mom_d=[A;W;F]
 @time Moments_Simulated_Dynamic(2,pA2,pF2,pWork2, π01, sample_size[1],4,1,3,site_features)
+mom_d=[A;W;F]
 
 
-
-function Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,nsims,sample_size)
+function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_features,nsims,sample_size; seed=1234)
+    Random.seed!(seed)
     moms_collect = []
     Qn = 0
-    αHT = [0;pars.αHT]
+    αHT = [0;pars1.αHT]
     for i=1:length(site_list)
         NK=3
         yb = site_features.yb[i]
@@ -250,7 +267,7 @@ function Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_featu
         years = (yb+1-1991):(yb-1991+T)
         pos = sum(site_features.T[1:i-1])
         #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = GetSitePars(pars,i)
+        pars_site = GetSitePars(pars1,i)
         sname = site_list[i]
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
@@ -261,7 +278,9 @@ function Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_featu
         moms_model = zeros(size(moms))
         price = site_features.prices[i,1]
         pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[1,:,:,:,:],price,0,T,NK) # last 3 are WR, T, NK
-        ssize2=convert(Int,(round(sample_size[i]))) # will replace later with actual arm sample sizes
+
+        arms=site_features.n_arms[i]
+        ssize2=convert(Int,(round(sample_size[i]/arms))) # will replace later with actual arm sample sizes
         A,W,F=Moments_Simulated_Static(nsims, pA1,pF1,pWork1, π1, ssize2,T, i,site_features)
         moms_control = [A;W;F]
         Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
@@ -297,13 +316,21 @@ end
 
 # check with baseline params
 pars = parameters()
-Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
+Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,1,sample_size)
 CriterionP(pars,site_list,budget,moments,wghts,site_features)
 moments
 GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
 
 
 # check with optimized params
+
+
+opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
+res2 = optimize(opt,x0)
+pars2 = UpdatePars(res2[2],pars,vlist)
+Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
+CriterionP(pars2,site_list,budget,moments,wghts,site_features)
+
 vlist0 = [:αc, :αH, :αA, :αF]
 opt,x0 = GetOptimization(pars,vlist0,site_list,budget,moments,wghts,site_features)
 res = optimize(opt,x0)
@@ -317,3 +344,90 @@ res2 = optimize(opt,x0)
 pars2 = UpdatePars(res2[2],pars,vlist)
 Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
 CriterionP(pars2,site_list,budget,moments,wghts,site_features)
+
+
+
+# same experiment as Jo
+opt,x0 = GetOptimization(pars,[:αH],site_list,budget,moments,wghts,site_features)
+res = optimize(opt,x0)
+pars = UpdatePars(res[2],pars,[:αH])
+@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
+CriterionP(pars,site_list,budget,moments,wghts,site_features)
+momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
+
+
+vlist1 = [:αc, :gN, :gF, :αA, :σH, :σC, :αWR,:αWR2, :αF,:β]
+opt,x0 = GetOptimization(pars,vlist1,site_list,budget,moments,wghts,site_features)
+res = optimize(opt,x0)
+pars = UpdatePars(res[2],pars,vlist1)
+@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
+CriterionP(pars,site_list,budget,moments,wghts,site_features)
+momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
+
+
+vlist2 = [:αWR,:αWR2]
+opt,x0 = GetOptimization(pars,vlist2,site_list,budget,moments,wghts,site_features)
+res = optimize(opt,x0)
+pars = UpdatePars(res[2],pars,vlist2)
+@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,100,sample_size)
+@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
+CriterionP(pars,site_list,budget,moments,wghts,site_features)
+momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
+
+
+
+pars = parameters()
+q1, GS1=Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
+CriterionP(pars,site_list,budget,moments,wghts,site_features)
+moments
+GS2=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
+
+GS1.CTJF
+
+
+
+
+
+
+
+
+
+
+moments.CTJF
+
+
+
+
+
+
+
+
+
+
+GS2.CTJF
+
+
+
+
+
+
+function distance_new(x, pars)
+    pars2 = UpdatePars(x,pars,vlist)
+    q1, GS1=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
+    return q1
+end
+
+
+opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
+res2 = optimize(opt,x0)
+pars2 = UpdatePars(res2[2],pars,vlist)
+CriterionP(pars2,site_list,budget,moments,wghts,site_features)
+
+
+Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
+
+distance_new(res2[2], pars2)
+d3(x)=distance_new(x, pars2)
+d3(res2[2])
+
+Optim.optimize(d3, res2[2])
