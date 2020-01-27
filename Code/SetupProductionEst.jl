@@ -1,16 +1,19 @@
 # this assumes we have run the script "SetupBaseline.jl"
 include("ProductionEstimation.jl")
-#measures = [:Achievement,:AchieveBelowAverage,:Repeat,:Math,:BelowMath,:Read,:AboveRead]
+#measures = [:Achievement,:AchieveBelowAverage,:Repeat,:Math,:BelowMath,:Read,:AboveRead,:PB,:BPI]
 #measures = [:Achievement,:AchieveBelowAverage,:Repeat,:BelowRead]
 #measures = [:Achievement,:AchieveBelowAverage,:Repeat,:PB,:BPI,:Math,:BelowMath,:Read,:AboveRead]
 #measures = [:Achievement,:AchieveBelowAverage,:Repeat]
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
-measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
+#measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
+measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 D.Achievement = D.Achievement*10
-D.AchieveBelowAverage = -D.AchieveBelowAverage
-D.BelowMath = -D.BelowMath
-D.BelowRead = -D.BelowRead
+# D.AchieveBelowAverage = -D.AchieveBelowAverage
+# D.BelowMath = -D.BelowMath
+# D.BelowRead = -D.BelowRead
+D.Repeat = -D.Repeat
+# D.BPI = -D.BPI
 
 D.N_treat = coalesce.(D.N_treat,0)
 
@@ -44,32 +47,43 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI,:δθ,:λ]
+vlist = [:δI,:δθ,:λ,:gN,:gF]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)
 pars_prod = UpdatePars(res[2],pars_prod,vlist)
 
+# opt,x0 = GetOptimization([:λ],pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
+#
+# res = optimize(opt,x0)
+# pars_prod = UpdatePars(res[2],pars_prod,[:λ])
 
 
 
 # opt,x0 = GetOptimization([:λ],pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 # res2 = optimize(opt,x0)
 # pars_prod = UpdatePars(res2[2],pars_prod,[:λ])
-InspectTreatFitProduction!(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
+InspectTreatFitProduction!(pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 break
 
 for i=1:8
     sname = site_list[i]
+    println(sname)
     m = data_moments[sname]
+    m2 = moms[sname]
     for a=2:site_features.n_arms[i]
+        ii = TEmoms[sname].arm.==a
+        figure("LFP")
+        lfp = mean(m[a].LFP) - mean(m[1].LFP)
+        lfp2 = mean(m2[a].LFP) - mean(m2[1].LFP)
+        scatter(lfp*ones(sum(ii)),TEmoms[sname].TE[ii,5],color="blue")
+        scatter(lfp2*ones(sum(ii)),TEmoms[sname].TE[ii,5],color="red")
         figure("Income")
         inc = mean(m[a].Inc) - mean(m[1].Inc)
-        scatter(inc*ones(size(TEmoms[sname].TE,1)),TEmoms[sname].TE[:,a-1])
-        figure("LFP")
-        inc = mean(m[a].LFP) - mean(m[1].LFP)
-        scatter(inc*ones(size(TEmoms[sname].TE,1)),TEmoms[sname].TE[:,a-1])
+        inc2 = mean(m2[a].Inc) - mean(m2[1].Inc) - lfp2*pars.wq*30
+        scatter(inc*ones(sum(ii)),TEmoms[sname].TE[ii,5],color="blue")
+        scatter(inc2*ones(sum(ii)),TEmoms[sname].TE[ii,5],color="red")
     end
 end
 

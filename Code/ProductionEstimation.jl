@@ -2,14 +2,15 @@
 # we need to think about how to do this a little better
 function ProdPars(nmeas)
     np = (δI = 2,gN = 2, gF = 2, δθ=1, λ=nmeas-1)
-    lb = (δI = zeros(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
+    lb = (δI = -Inf*ones(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
     ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = Inf, λ = Inf*ones(nmeas-1))
     δI = 0.5 *ones(2)
     gN = zeros(2) #log.([1.5,1.5])
     gF = zeros(2) #log.([0.7,0.7])
     δθ = 0.5
-    λ = zeros(nmeas-1)
-    #λ = ones(nmeas-1)
+    #λ = zeros(nmeas-1)
+    λ = ones(nmeas-1)
+    #λ = [11.,15.,0.]
     #λ = [1.,-1.,1.,-1.,1.,-1.,-1.]
     #λ = [2.3,-2.48,2.85,-2.9,1.29]
     return (np=np,lb=lb,ub=ub,δI=δI,gN=gN,gF=gF,δθ=δθ,λ=λ)
@@ -159,7 +160,7 @@ function InspectTreatFitProduction!(pars_prod,pars,ChoiceProbs,site_list,budget,
     Qn = 0
     NK=3 # might want to update this later
     λ = [1;pars_prod.λ]
-    colors = ["blue","red","green","pink","purple","orange","black","magenta"]
+    colors = ["blue","red","green","pink","purple","orange","black","magenta","grey"]
     for i=1:length(site_list)
         sname = site_list[i]
         #println(sname)
