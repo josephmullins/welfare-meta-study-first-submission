@@ -4,7 +4,6 @@ using Random
 using Distributed
 using SharedArrays
 
-nprocs()
 
 cd("/Users/FilipB/github/welfare-meta-study/Code")
 includet("BaselineModel.jl")
@@ -14,7 +13,7 @@ includet("SetupBaseline.jl")
 Γ = exp.(0 .+ -0.1*(1:18))
 pars = parameters()
 vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β]
-
+site_list
 sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 
  # old was [4803,1405+1410,3208,6009]
@@ -24,31 +23,58 @@ sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 
 # This block of code sets up some things I use to test the functions below
 αHT = [0;pars.αHT]
-yb = site_features.yb[1]
-T = site_features.T[1]
+yb = site_features.yb[3]
+T = site_features.T[3]
 years = (yb+1-1991):(yb-1991+T)
 pos = sum(site_features.T[1:1-1])
 #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-pars_site = GetSitePars(pars,1)
-sname = site_list[1]
+pars_site = GetSitePars(pars,3)
+sname = site_list[3]
 Y = getfield(budget,sname)
 moms = getfield(moments,sname)
-π0_a = site_features.π0[2,2,:]
-sum(π0_a)
-π01a = site_features.π0[:,:,:]
-π01 = site_features.π0[1,:,:]
-year_meas = site_features.year_meas[1]
-Abar = size(Y)[1]
+#π0_a = site_features.π0[2,2,:]
+#sum(π0_a)
+#π01a = site_features.π0[:,:,:]
+#π01 = site_features.π0[1,:,:]
+year_meas = site_features.year_meas[3]
+Abar = size(Y)[3]
 moms_model = zeros(size(moms))
-WR = site_features.work_reqs[1,2]
-price = site_features.prices[1,2]
+WR = site_features.work_reqs[3,2]
+price = site_features.prices[3,2]
 abar = min(Abar,2)
 Y_I = budget[Symbol(sname,"_I")]
-TLlength = site_features.TLlength[1,2]
-NK = size(π01)[1]
+TLlength = site_features.TLlength[3,2]
+NK =3# size(π01)[3]
 pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[abar,:,:,:,:],price,WR,T,NK)
 pA2,pWork2,pF2 = GetDynamicProbs(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,NK,TLlength)
 # end test code prep
+
+
+π0_nk1 = site_features.π0[1,:,:]
+prob_nk=zeros(3)
+prob_nk[1]=sum(π0_nk1[1,:])
+for i in 2:3
+    prob_nk[i]=sum(π0_nk1[i,:])+prob_nk[i-1]
+end
+prob_nk
+if sum(prob_nk)<0.99
+    println("problem: pi")
+end
+nk_draw=rand(Uniform())
+nk=0
+
+A1=zeros(3)
+for i in 2:3
+    A1[i]=ifelse(nk_draw>=prob_nk[i],1.0,0)
+end
+nk=convert(Int,sum(A1))+1
+if nk>3
+    println("nk broken")
+    println(nk)
+    println(A1)
+end
+
+
 
 function draw_kids(site,site_features)
     # get NK
@@ -65,15 +91,12 @@ function draw_kids(site,site_features)
     nk=0
 
     A1=zeros(3)
-    for i in 2:3
+    for i in 1:2
         A1[i]=ifelse(nk_draw>=prob_nk[i],1.0,0)
     end
     nk=convert(Int,sum(A1))+1
-    if nk>3
-        println("nk broken")
-        println(nk)
-        println(A1)
-    end
+
+
 
     # get age
     π0_a = site_features.π0[site,nk,:]
@@ -185,7 +208,7 @@ function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,s
                                                             F_mat[t,n,i]=F0
                                                             W_mat_2[t,n,i]=W_mat[t,n,i]
                                                         end
-                                                    a+=1
+                                                    #a+=1
                                                 end
         end
     end
@@ -371,7 +394,14 @@ G1=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 
 
 G1=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
-G1.CTJF
+G1.LAGAIN
+
+
+
+GS1.LAGAIN
+
+
+
 
 function InspectModelFit2(model_moments,data_moments,site_features,site_list;Part=true)
     colors = ["blue","green","red"]
