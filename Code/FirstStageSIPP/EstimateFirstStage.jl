@@ -1,4 +1,4 @@
-include("MLEmodule.jl")
+include("MLEmoduleSpec1.jl")
 
 D = CSV.read("SIPPdata.csv")
 NS = 48
@@ -26,15 +26,21 @@ state = convert(Array{Int64,1},D.state)
 dw = sort(by(D,:state,x->mean(log.(x.Wage[x.Wage.>0]))))
 w0 = exp.(convert(Array{Float64,1},dw.x1))
 
-x0 = [[1.,0.,3.,1.,10.,1.];
- [-1.,0.,0.];zeros(2);zeros(2);zeros(NS);w0;40*ones(NS)
- ]
+x0 = [ones(NS);zeros(NS);zeros(NS);40*ones(NS);w0;
+    [3.,1.,10.,1.,-1.,0.,0.,0.,0.,0.,0.]]
 
-lb = [[0.,-Inf,0.,0.,0.,0.];
-    [-10.,-.1,0.];-Inf*ones(4);-Inf*ones(NS);4*30*ones(NS);zeros(NS)]
+#x0 = [[1.,0.,3.,1.,10.,1.];
+ #[-1.,0.,0.];zeros(2);zeros(2);zeros(NS);w0;40*ones(NS)
+ #]
 
-ub = [[Inf,Inf,5.,Inf,Inf,Inf];
-        [1.,1.,0.];Inf*ones(4);Inf*ones(NS);20*30*ones(NS);90*ones(NS)]
+lb = [[zeros(NS);-Inf*ones(NS);-Inf*ones(NS);zeros(NS);4*30*ones(NS)];
+    [0.,0.,0.,0.,-10.,-.1,0.]; -Inf*ones(4)]
+
+ub = [Inf*ones(NS*5);[5,Inf,Inf,Inf,1.,1.,0.]; Inf*ones(4)]
+
+
+#ub = [[Inf,Inf,5.,Inf,Inf,Inf];
+        #[1.,1.,0.];Inf*ones(4);Inf*ones(NS);20*30*ones(NS);90*ones(NS)]
 
 #x0 = GetParVec(mod)
 

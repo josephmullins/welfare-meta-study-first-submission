@@ -252,7 +252,7 @@ function GetChildOutcomesStatic(year_meas,pA,pWork,pF,Y,pars_prod,price,wq)
 					if age<=5
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
-						gN,gF,δI = pars_prod.gN[1],pars_prod.gN[1],pars_prod.δI[1]
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[1]
 					end
 					for p=0:1
 						If = δI*log(Y[t,nk+1,1+p,2]+(112-30)*wq-price) - gF
@@ -286,7 +286,7 @@ function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,Y_I,pars_prod,price,wq)
 					if age<=5
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
-						gN,gF,δI = pars_prod.gN[1],pars_prod.gN[1],pars_prod.δI[1]
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[1]
 					end
 					# case: time limit not reached yet
 					for w=1:TLlength
