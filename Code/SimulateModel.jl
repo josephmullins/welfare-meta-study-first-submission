@@ -3,6 +3,8 @@ using Distributions
 using Random
 using Distributed
 using SharedArrays
+using Statistics
+using StatsBase
 
 
 cd("/Users/FilipB/github/welfare-meta-study/Code")
@@ -10,9 +12,16 @@ includet("BaselineModel.jl")
 includet("EstimationBaseline.jl")
 includet("SetupBaseline.jl")
 
+
+
 Γ = exp.(0 .+ -0.1*(1:18))
+
+
+best_pars=readdlm("current_ests")
 pars = parameters()
-vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β]
+vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq]
+
+pars = UpdatePars(best_pars,pars,vlist)
 site_list
 sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 
@@ -20,59 +29,6 @@ sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 
  # I got the numbers for NEWWS from line 139, and for LAGAIN from 374
 
-
-# This block of code sets up some things I use to test the functions below
-αHT = [0;pars.αHT]
-yb = site_features.yb[3]
-T = site_features.T[3]
-years = (yb+1-1991):(yb-1991+T)
-pos = sum(site_features.T[1:1-1])
-#αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-pars_site = GetSitePars(pars,3)
-sname = site_list[3]
-Y = getfield(budget,sname)
-moms = getfield(moments,sname)
-#π0_a = site_features.π0[2,2,:]
-#sum(π0_a)
-#π01a = site_features.π0[:,:,:]
-#π01 = site_features.π0[1,:,:]
-year_meas = site_features.year_meas[3]
-Abar = size(Y)[3]
-moms_model = zeros(size(moms))
-WR = site_features.work_reqs[3,2]
-price = site_features.prices[3,2]
-abar = min(Abar,2)
-Y_I = budget[Symbol(sname,"_I")]
-TLlength = site_features.TLlength[3,2]
-NK =3# size(π01)[3]
-pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[abar,:,:,:,:],price,WR,T,NK)
-pA2,pWork2,pF2 = GetDynamicProbs(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,NK,TLlength)
-# end test code prep
-
-
-π0_nk1 = site_features.π0[1,:,:]
-prob_nk=zeros(3)
-prob_nk[1]=sum(π0_nk1[1,:])
-for i in 2:3
-    prob_nk[i]=sum(π0_nk1[i,:])+prob_nk[i-1]
-end
-prob_nk
-if sum(prob_nk)<0.99
-    println("problem: pi")
-end
-nk_draw=rand(Uniform())
-nk=0
-
-A1=zeros(3)
-for i in 2:3
-    A1[i]=ifelse(nk_draw>=prob_nk[i],1.0,0)
-end
-nk=convert(Int,sum(A1))+1
-if nk>3
-    println("nk broken")
-    println(nk)
-    println(A1)
-end
 
 
 
@@ -83,9 +39,6 @@ function draw_kids(site,site_features)
     prob_nk[1]=sum(π0_nk[1,:])
     for i in 2:3
         prob_nk[i]=sum(π0_nk[i,:])+prob_nk[i-1]
-    end
-    if sum(prob_nk)<0.99
-        println("problem: pi")
     end
     nk_draw=rand(Uniform())
     nk=0
@@ -114,18 +67,14 @@ function draw_kids(site,site_features)
     A2=zeros(17)
     for i in 1:16 # will never be above 16 by construction
         A2[i]=ifelse(age_draw>=prob_age[i],1.0,0) # A2[i]=1 if weakly older than age i
-            # im
     end
 
     age=convert(Int,sum(A2))+1 # sum A2 vector to get age INDEX
 
     return nk, age
 end
-draw_kids(1,site_features)
-π0_nk =π01[1,:,:]
-π01a
 
-#
+
 function decisions_static(t,nk, age,pA,pWork,pF)
 
     A=0
@@ -149,7 +98,7 @@ function decisions_static(t,nk, age,pA,pWork,pF)
 
     return A,W,F
 end
-decisions_static(2,3,2,pA1,pWork1,pF1)
+
 
 function decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
     A=0
@@ -173,12 +122,7 @@ function decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
 
     return A,W,F
 end
-decisions_dynamic(1,2,3,1,pA2,pWork2,pF2)
 
-
-
-A_mat1=SharedArray{Float64}(10,10)
-1+1
 
 function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,site_features)
 
@@ -225,9 +169,7 @@ function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,s
 
     return A,W,F
 end
-@time A,W,F=Moments_Simulated_Static(2,pA1,pWork1,pF1,  sample_size[1],4,1,site_features)
-@time Moments_Simulated_Static(2,pA1,pWork1,pF1, sample_size[1],4,1,site_features)
-mom_d=[A;W;F]
+
 
 function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site, tlsite,site_features)
     A_mat=zeros(T,nsims, sample_size_site)
@@ -274,12 +216,7 @@ function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site,
     return A,W,F
 
 end
-@time A,W,F=Moments_Simulated_Dynamic(1,pA2,pF2,pWork2,  sample_size[1],3,1,2,site_features)
-@time Moments_Simulated_Dynamic(2,pA2,pF2,pWork2,  sample_size[1],4,1,2,site_features)
-mom_d=[A;W;F]
-site_features.T
-site_features.TLlength
-1
+
 function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_features,nsims,sample_size; seed=1234, wrapped=false)
     Random.seed!(seed)
     moms_collect = []
@@ -308,7 +245,8 @@ function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_feat
             moms_model=[]
         end
         price = site_features.prices[i,1]
-        pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[1,:,:,:,:],price,0,T,NK) # last 3 are WR, T, NK
+        WR = site_features.work_reqs[i,1]
+        pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[1,:,:,:,:],price,WR,T,NK) # last 3 are WR, T, NK
 
 
         A,W,F=Moments_Simulated_Static(nsims, pA1,pWork1,pF1,  ssize2,T, i,site_features)
@@ -358,11 +296,6 @@ function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_feat
     return Qn, (;zip(site_list,moms_collect)...)
 end
 
-# check with baseline params
-pars = parameters()
-q,GS1a=Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=true)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-G1a=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
 
 
 # check with optimized params
@@ -371,34 +304,78 @@ G1a=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
 opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
 res2 = optimize(opt,x0)
 pars2 = UpdatePars(res2[2],pars,vlist)
-q1, GS1=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size; wrapped=true)
+fit_sim, moms_sim_optimized=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=false)
 CriterionP(pars2,site_list,budget,moments,wghts,site_features)
-G1=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
+moms_diff_optimized=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
+
+pars.αc
+pars2.αc
+
+
+
+#=
+
+bootstrapped SE code
+
+=#
+
+
+length1=10
+success_vec=[]
+param_mat=zeros(length(res2[2]), length1)
+
+@time for s in 1:length1
+    fit_sim, moms_sim_optimized_bootstrap=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=false, seed=s)
+    opt2,x2 = GetOptimization(pars2,vlist,site_list,budget,moms_sim_optimized_bootstrap,wghts,site_features)
+    @time res3 = optimize(opt2,x2)
+    println(res3[3])
+    param_mat[:,s].=res3[2]
+    append!(success_vec,[res3[3]])
+end
+
+param_mat
+
+
+mean_sim_params=zeros(length(param_mat[:,1]))
+ses=zeros(length(param_mat[:,1]))
+for i in 1:length(param_mat[:,1])
+    mean_sim_params[i]=mean(param_mat[i,1:10])
+    ses[i]=std(param_mat[i,1:10])
+end
 
 
 
 
 
+names1=[]
+names1_index=[]
+names1_number=[]
+for i in 1:length(vlist)
+    l=pars.np[vlist[i]]
+    for j in 1:l
+        append!(names1,[string(vlist[i])])
+        append!(names1_index,j)
+        append!(names1_number,i)
+    end
+end
 
 
+df = DataFrame()
+df.names=names1
+df.par_number=names1_number
+df.names_index=names1_index
+df.estimated_params=res2[2]
+df.baseline_params=best_pars[:]
+df.mean_sim_params=mean_sim_params
+df.standard_deviations=ses
 
 
-
-
-
-
-
-
-
-
-
-
-G1=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
-G1.LAGAIN
-
-
-
-GS1.LAGAIN
+for i in 1:length1
+    df.i=param_mat[:,i]
+    rename!(df, Dict(:i =>"sim_$i"))
+end
+CSV.write("Bootstrap/Bootstrap_params.csv",df)
+df2=CSV.read("Bootstrap/Bootstrap_params.csv")
 
 
 
@@ -411,12 +388,7 @@ function InspectModelFit2(model_moments,data_moments,site_features,site_list;Par
         moms0 = getfield(data_moments,sname)
         moms1 = getfield(model_moments,sname)
         for a=1:site_features.n_arms[i]
-            #for v in [:Part,:LFP]
-            v=:LFP
-            if Part==false
-                v=:LFP
-            end
-            v=ifelse(Part==false,:Part,:LFP)
+            v=ifelse(Part==true,:Part,:LFP)
                 figure(String(v))
                 subplot(2,4,i)
                 PyPlot.title(String(sname))
@@ -426,256 +398,25 @@ function InspectModelFit2(model_moments,data_moments,site_features,site_list;Par
         end
     end
 end
-G1=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
-G1a=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
 
 
-# compare participation--old pars
-clf()
-A=InspectModelFit2(G1a,data_moments,site_features,site_list)
-gcf()
-clf()
-A=InspectModelFit2(GS1a,data_moments,site_features,site_list)
-gcf()
+fit_sim, moms_sim_optimized=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=true)
+CriterionP(pars2,site_list,budget,moments,wghts,site_features)
+moms_diff_optimized=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 
-#new pars
+
+# compare participation
 clf()
-A=InspectModelFit2(G1,data_moments,site_features,site_list)
+Participation_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list)
 gcf()
 clf()
-A=InspectModelFit2(GS1,data_moments,site_features,site_list)
+Participation_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list)
 gcf()
 
 # compare lfp
 clf()
-A=InspectModelFit2(G1a,data_moments,site_features,site_list, Part=false)
+LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, Part=false)
 gcf()
 clf()
-A=InspectModelFit2(GS1a,data_moments,site_features,site_list, Part=false)
+LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, Part=false)
 gcf()
-
-#new pars
-clf()
-A=InspectModelFit2(G1,data_moments,site_features,site_list, Part=false)
-gcf()
-clf()
-A=InspectModelFit2(GS1,data_moments,site_features,site_list, Part=false)
-gcf()
-
-
-1
-
-
-
-
-
-GS1.FTP
-1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1
-
-
-for i=1:length(site_list)
-        for a = 1:site_features.n_arms[i]
-            Arm="Control"
-            if a>1
-                Arm="Treatment"
-            end
-        end
-end
-
-
-
-
-
-
-
-
-
-function GetMomentsAll2(pars,site_list,budget,moments,wghts,site_features)
-    moms_collect = []
-    αHT = [0;pars.αHT]
-    for i=1:length(site_list)
-        yb = site_features.yb[i]
-        T = site_features.T[i]
-        years = (yb+1-1991):(yb-1991+T)
-        pos = sum(site_features.T[1:i-1])
-        #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
-        pars_site = GetSitePars(pars,i)
-        sname = site_list[i]
-        Y = getfield(budget,sname)
-        moms = getfield(moments,sname)
-        π0 = site_features.π0[i,:,:]
-        year_meas = site_features.year_meas[i]
-        Abar = size(Y)[1]
-        moms_model = zeros(size(moms))
-        for a = 1:site_features.n_arms[i]
-            WR = site_features.work_reqs[i,a]
-            price = site_features.prices[i,a]
-            abar = min(Abar,a)
-            if site_features.time_limits[i,a]==1
-                Y_I = budget[Symbol(sname,"_I")]
-                TLlength = site_features.TLlength[i,a]
-                moms_model[:,a] = GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
-            else
-                moms_model[:,a] = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
-            end
-        end
-        append!(moms_collect,[moms_model])
-    end
-    return (;zip(site_list,moms_collect)...)
-end
-moms_model[:,a]=
-1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-T = site_features.T[1]
-sname = site_list[1]
-moms0 = getfield(data_moments,sname)
-moms1 = getfield(GS1,sname)
-moms1 = getfield(G1,sname)
-
-
-for a=1:site_features.n_arms[1]
-    for v in [:Part,:LFP,:Inc]
-        figure(String(v))
-        subplot(2,4,1)
-        title(String(sname))
-        plot(moms0[a][v],color=colors[a])
-        plot(moms1[a][v],color=colors[a],linestyle="--")
-    end
-end
-
-
-
-
-
-vlist0 = [:αc, :αH, :αA, :αF]
-opt,x0 = GetOptimization(pars,vlist0,site_list,budget,moments,wghts,site_features)
-res = optimize(opt,x0)
-pars = UpdatePars(res[2],pars,vlist0)
-Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-
-# with further optimization the gap in the criterion functions grows
-opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
-res2 = optimize(opt,x0)
-pars2 = UpdatePars(res2[2],pars,vlist)
-Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars2,site_list,budget,moments,wghts,site_features)
-
-
-
-# same experiment as Jo
-opt,x0 = GetOptimization(pars,[:αH],site_list,budget,moments,wghts,site_features)
-res = optimize(opt,x0)
-pars = UpdatePars(res[2],pars,[:αH])
-@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
-
-
-vlist1 = [:αc, :gN, :gF, :αA, :σH, :σC, :αWR,:αWR2, :αF,:β]
-opt,x0 = GetOptimization(pars,vlist1,site_list,budget,moments,wghts,site_features)
-res = optimize(opt,x0)
-pars = UpdatePars(res[2],pars,vlist1)
-@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
-
-
-vlist2 = [:αWR,:αWR2]
-opt,x0 = GetOptimization(pars,vlist2,site_list,budget,moments,wghts,site_features)
-res = optimize(opt,x0)
-pars = UpdatePars(res[2],pars,vlist2)
-@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,100,sample_size)
-@time Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-momsnew=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
-
-
-
-pars = parameters()
-q1, GS1=Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,site_features,10,sample_size)
-CriterionP(pars,site_list,budget,moments,wghts,site_features)
-moments
-GS2=GetMomentsAll(pars,site_list,budget,moments,wghts,site_features)
-
-GS1.CTJF
-
-
-
-
-
-
-
-
-
-
-moments.CTJF
-
-
-
-
-
-
-
-
-
-
-GS2.CTJF
-
-
-
-
-
-
-function distance_new(x, pars)
-    pars2 = UpdatePars(x,pars,vlist)
-    q1, GS1=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
-    return q1
-end
-
-
-opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
-res2 = optimize(opt,x0)
-pars2 = UpdatePars(res2[2],pars,vlist)
-CriterionP(pars2,site_list,budget,moments,wghts,site_features)
-
-
-Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,10,sample_size)
-
-distance_new(res2[2], pars2)
-d3(x)=distance_new(x, pars2)
-d3(res2[2])
-
-Optim.optimize(d3, res2[2])
