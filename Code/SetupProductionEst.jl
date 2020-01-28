@@ -7,13 +7,15 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:Achievement] #<- could we possibly get more data here?
+measures = [:Repeat] #<- could we possibly get more data here?
+measures = [:Achievement,:Math]
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 D.Achievement = D.Achievement*10
+D.Math = D.Math*10/17 #<- Table 12.3 bounds standard error for WJ math between 15 and 20
 D.AchieveBelowAverage = -D.AchieveBelowAverage
 D.BelowMath = -D.BelowMath
 D.BelowRead = -D.BelowRead
-#D.Repeat = -D.Repeat
+D.Repeat = -D.Repeat
 # D.BPI = -D.BPI
 
 D.N_treat = coalesce.(D.N_treat,0)
@@ -48,11 +50,16 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI,:δθ,:gN,:gF]
+vlist = [:δI,:gN,:δθ,:gF,:λ]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)
 pars_prod = UpdatePars(res[2],pars_prod,vlist)
+
+break
+
+
+TEmod = GetTreatmentEffects(pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 # opt,x0 = GetOptimization([:λ],pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 #
@@ -68,6 +75,41 @@ InspectTreatFitProduction!(pars_prod,pars,CP,site_list,budget,TEmoms,site_featur
 
 break
 
+LFP = []
+LFP2 = []
+INC = []
+INC2 = []
+TE = []
+TEm = []
+for i=1:8
+    sname = site_list[i]
+    println(sname)
+    m = data_moments[sname]
+    m2 = moms[sname]
+    for a=2:site_features.n_arms[i]
+        ii = TEmoms[sname].arm.==a
+        figure("LFP")
+        lfp = (mean(m[a].LFP) - mean(m[1].LFP))*ones(sum(ii))
+        lfp2 = (mean(m2[a].LFP) - mean(m2[1].LFP))*ones(sum(ii))
+        te = TEmoms[sname].TE[ii,1]
+        tem = TEmod[sname][ii]
+        scatter(lfp,te,color="blue")
+        scatter(lfp2,te,color="red")
+        scatter(lfp2,tem,color="pink")
+        figure("Income")
+        inc = (mean(m[a].Inc) - mean(m[1].Inc))*ones(sum(ii))
+        inc2 =(mean(m2[a].Inc) - mean(m2[1].Inc) - lfp2[1]*pars.wq*30)*ones(sum(ii))
+        scatter(inc,te,color="blue")
+        scatter(inc2,te,color="red")
+        scatter(inc2,tem,color="pink")
+        append!(LFP,lfp)
+        append!(LFP2,lfp)
+        append!(INC,inc)
+        append!(INC2,inc2)
+        append!(TE,te)
+    end
+end
+
 for i=1:8
     sname = site_list[i]
     println(sname)
@@ -78,16 +120,15 @@ for i=1:8
         figure("LFP")
         lfp = mean(m[a].LFP) - mean(m[1].LFP)
         lfp2 = mean(m2[a].LFP) - mean(m2[1].LFP)
-        scatter(lfp*ones(sum(ii)),TEmoms[sname].TE[ii,1],color="blue")
-        scatter(lfp2*ones(sum(ii)),TEmoms[sname].TE[ii,1],color="red")
+        scatter(lfp,mean(TEmoms[sname].TE[ii,1]),color="blue")
+        scatter(lfp2,mean(TEmoms[sname].TE[ii,1]),color="red")
         figure("Income")
         inc = mean(m[a].Inc) - mean(m[1].Inc)
         inc2 = mean(m2[a].Inc) - mean(m2[1].Inc) - lfp2*pars.wq*30
-        scatter(inc*ones(sum(ii)),TEmoms[sname].TE[ii,1],color="blue")
-        scatter(inc2*ones(sum(ii)),TEmoms[sname].TE[ii,1],color="red")
+        scatter(inc,mean(TEmoms[sname].TE[ii,1]),color="blue")
+        scatter(inc2,mean(TEmoms[sname].TE[ii,1]),color="red")
     end
 end
-
 
 
 

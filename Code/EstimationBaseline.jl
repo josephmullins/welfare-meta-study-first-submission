@@ -6,13 +6,12 @@ using PyPlot
 # we want to go back to what we did before, but with adaptability?
 # one idea: do a copy operation each time?
 
-function parameters()
+function parameters(Γ = zeros(18),gF = 0.)
     np = (αc = 8, gN = 1, gF =1, αH = 8, αA = 8, σH = 1, σC = 1, wq = 1, αWR = 1, αWR2 = 1, αF = 8, αHT = 8, β = 1)
     lb = (αc = 0. *ones(8), gN = -Inf, gF =-Inf, αH = -Inf*ones(8), αA = -Inf*ones(8), σH = 0., σC = 0., wq = 0. , αWR = -Inf, αWR2 = -Inf, αF = -Inf*ones(8), αHT = -Inf*ones(8), β = 0.)
     ub = (αc = Inf*ones(8), gN = Inf, gF =Inf, αH = Inf*ones(8), αA = Inf*ones(8), σH = Inf, σC = Inf, wq = 5., αWR = Inf, αWR2 = Inf, αF = Inf*ones(8), αHT = Inf*ones(8), β = 1.)
     αc = 1. *ones(8)
     gN = 0.
-    gF = 0.
     αH = 0.1 .+ zeros(8) #zeros(35) #zeros(35)
     αA = zeros(8)
     β = 0.9
@@ -23,7 +22,7 @@ function parameters()
     αWR2 = 0. #ones(8)
     αF = 0. * ones(8)
     αHT = zeros(8)
-    Γ = zeros(18)
+
     return (np=np,lb=lb,ub=ub,αc=αc,gN=gN,gF=gF,αH=αH,αA=αA,β=β,σH=σH,σC=σC,wq=wq,αWR=αWR,αWR2=αWR2,αF=αF,αHT=αHT,Γ=Γ)
 end
 

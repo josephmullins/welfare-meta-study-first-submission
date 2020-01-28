@@ -4,13 +4,15 @@ include("SetupBaseline.jl")
 using NLopt
 
 # don't forget that this needs to be estimated
-Γ = exp.(0 .+ -0.1*(1:18)) #<- we need to figure this out and decide what we're doing!!!
+Γ = readdlm("FirstStageSIPP/Gamma_est")[:]
+gF = readdlm("FirstStageSIPP/gF")[:] #<- we need to figure this out and decide what we're doing!!!
 #Γ = 0.1*ones(18)
 #pars = (αc=1.,gN = 0. *ones(2), gF = ones(2)*0.2,wq = 2.,σC = 1.,σH = 1.,αWR = 0.5,αF = 2., αA = 1.,αH=1.,Γ=Γ,β=0.)
 #pars = (αc=1. ,gN = 0. *ones(2), gF = ones(2)*0.2,wq = 2.,σC = 1.,σH = 1.,αWR = 0.5,αF = 2., αA = 1. *ones(num_sites),αH=1. *ones(num_sites),Γ=Γ,β=0.)
 
-pars = parameters()
-vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq]
+pars = parameters(Γ,gF)
+#pars = parameters()
+vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq,:gN]
 
 
 # # first an experiment to see what it takes to fit one site well

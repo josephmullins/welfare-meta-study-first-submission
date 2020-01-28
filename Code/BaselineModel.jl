@@ -15,16 +15,17 @@ function ChoiceProb(pars,Y,price,t,nk,age,CV,WR)
 	vA = zeros(Real,2) #<- value from participation choice
 	for p=0:1
 		if age<=17 #<-
+			G = pars.Γ[age+1]*pars.σC
 			if age<=5 #<-
-				gN,gF = pars.Γ[age+1]*pars.gN[1],pars.Γ[age+1]*pars.gF[1]
+				gN,gF = G*pars.gN[1],G*pars.gF[1]
 			else
-				gN,gF = pars.Γ[age+1]*pars.gN[1],pars.Γ[age+1]*pars.gF[1]
+				gN,gF = G*pars.gN[1],G*pars.gF[1]
 			end
-			uF = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) + pars.αF - gF
-			uN = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
+			uF = (pars.αc+G)*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq-price) + pars.αF - (gN+gF)
+			uN = (pars.αc+G)*log(Y[t,nk+1,1+p,2]+(112-30)*pars.wq) - gN
 			pF[p+1] = 1/(1+exp((uN-uF)/pars.σC)) #<- probability of formal care
 			vW1 = IncVal(uN,uF,pars.σC) - pars.αH - WR*p*pars.αWR2
-			vW0 = (pars.αc+pars.Γ[age+1])*log(Y[t,nk+1,1+p,1] + 112*pars.wq) - pars.αWR*WR*p
+			vW0 = (pars.αc+G)*log(Y[t,nk+1,1+p,1] + 112*pars.wq) - pars.αWR*WR*p
 			pWork[p+1] = 1/(1+exp((vW0-vW1)/pars.σH))
 			vA[p+1] = IncVal(vW0,vW1,pars.σH) + pars.β*CV[p+1] - pars.αA*p
 		else
@@ -249,10 +250,10 @@ function GetChildOutcomesStatic(year_meas,pA,pWork,pF,Y,pars_prod,price,wq)
 				age = a0+t-1
 				I = zeros(Real,2)
 				if age<=17
-					if age<=5
+					if age<=12
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
-						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[1]
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[2]
 					end
 					for p=0:1
 						If = δI*log(Y[t,nk+1,1+p,2]+(112-30)*wq-price) - gF
@@ -283,10 +284,10 @@ function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,Y_I,pars_prod,price,wq)
 				age = a0+t-1
 				Imean = 0
 				if age<=17
-					if age<=5
+					if age<=12
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
-						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[1]
+						gN,gF,δI = pars_prod.gN[2],pars_prod.gN[2],pars_prod.δI[2]
 					end
 					# case: time limit not reached yet
 					for w=1:TLlength
