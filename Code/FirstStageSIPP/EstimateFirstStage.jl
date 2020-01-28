@@ -33,7 +33,7 @@ x0 = [ones(NS);zeros(NS);zeros(NS);40*ones(NS);w0;
  #[-1.,0.,0.];zeros(2);zeros(2);zeros(NS);w0;40*ones(NS)
  #]
 
-lb = [[zeros(NS);-Inf*ones(NS);-Inf*ones(NS);zeros(NS);4*30*ones(NS)];
+lb = [[-Inf*ones(NS);-Inf*ones(NS);-Inf*ones(NS);zeros(NS);4*30*ones(NS)];
     [0.,0.,0.,0.,-10.,-.1,0.]; -Inf*ones(4)]
 
 ub = [Inf*ones(NS*5);[5,Inf,Inf,Inf,1.,1.,0.]; Inf*ones(4)]

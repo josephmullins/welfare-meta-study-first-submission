@@ -34,9 +34,9 @@ function LogLike(x,age,wage,price,work,pay,state)
             gNi = gN[2]
             gFi = gF[2]
         end
-        v0 = (αc[st] + G)*log(wq*112)
-        v1N = (αc[st] + G)*log(mwagei + (112-30)*wq) - μH[st] - G*gNi
-        v1F = (αc[st] + G)*log(mwagei + (112-30)*wq - pF[st]) + μF[st] - μH[st] - G*gFi
+        v0 = αc[st] + G*log(wq*112)
+        v1N = G*log(mwagei + (112-30)*wq) + μH[st] - G*gNi
+        v1F = G*log(mwagei + (112-30)*wq - pF[st]) + μF[st] - G*gFi
         v1 = σC*log(exp(v1N/σC)+exp(v1F/σC))
         if work[i]==0
             ll += v0 - log(exp(v0)+exp(v1))
