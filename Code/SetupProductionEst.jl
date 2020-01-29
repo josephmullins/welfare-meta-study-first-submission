@@ -7,11 +7,12 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:Repeat] #<- could we possibly get more data here?
-measures = [:Achievement,:Math]
+measures = [:Achievement] #<- could we possibly get more data here?
+#measures = [:Achievement,:Math]
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
-D.Achievement = D.Achievement*10
-D.Math = D.Math*10/17 #<- Table 12.3 bounds standard error for WJ math between 15 and 20
+SE = CSV.read("../Data/ChildTreatmentEffectsSEs.csv")
+#D.Achievement = D.Achievement
+#D.Math = D.Math*10/17 #<- Table 12.3 bounds standard error for WJ math between 15 and 20
 D.AchieveBelowAverage = -D.AchieveBelowAverage
 D.BelowMath = -D.BelowMath
 D.BelowRead = -D.BelowRead
@@ -19,15 +20,19 @@ D.Repeat = -D.Repeat
 # D.BPI = -D.BPI
 
 D.N_treat = coalesce.(D.N_treat,0)
-
+for v in measures; SE[v] = coalesce.(SE[v],Inf); end
 
 # create a TEmoms object that stores all the info we want
 moms_collect = []
 for s in site_list
     m = D[D.Site.==String(s),:]
+    se = SE[SE.Site.==String(s),:]
     TE_ = m[:,measures]
-    wght = convert(Array{Float64,1},m.N_control+m.N_treat)/1000
-    wght = wght.*ones(1,size(TE_)[2])
+    se_ = se[:,measures]
+    tevar = convert(Array{Float64,2},se[:,measures]).^2
+    N = convert(Array{Float64,1},m.N_control+m.N_treat)
+    tevar = 2*tevar./N
+    wght = 1 ./tevar
     Idrop = [ismissing.(TE_[v]) for v in measures] #convert(Array{Bool,2},ismissing.(TE))
     TE = zeros(size(TE_)) #convert(Array{Float64,2},coalesce.(TE,0.))
     for i=1:length(measures)
@@ -50,11 +55,54 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI,:gN,:δθ,:gF,:λ]
+vlist = [:δI] #,:gN,:gF]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)
 pars_prod = UpdatePars(res[2],pars_prod,vlist)
+
+V = GetVariance(res[2],vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
+
+se = sqrt.(diag(V))
+
+print(vlist)
+display([res[2] .- 1.96*se res[2] res[2] .+ 1.96*se])
+
+B = zeros(2,100)
+for b=1:100
+    moms_collect = []
+    for s in site_list
+        m = D[D.Site.==String(s),:]
+        se = SE[SE.Site.==String(s),:]
+        TE_ = m[:,measures]
+        se_ = se[:,measures]
+        tevar = convert(Array{Float64,2},se[:,measures]).^2
+        N = convert(Array{Float64,1},m.N_control+m.N_treat)
+        tevar = 2*tevar./N
+        wght = 1 ./tevar
+        Idrop = [ismissing.(TE_[v]) for v in measures] #convert(Array{Bool,2},ismissing.(TE))
+        TE = zeros(size(TE_)) #convert(Array{Float64,2},coalesce.(TE,0.))
+        for i=1:length(measures)
+            for k=1:size(TE_)[1]
+                if ~ismissing(TE_[k,i])
+                    TE[k,i] = TE_[k,i] + rand(Normal(0,sqrt(tevar[k,i])))
+                end
+            end
+            #TE[:,i] = convert(Array{Float64,1},coalesce.(TE_[measures[i]],0.))
+            #wght[Idrop[i],i] .= 0.
+        end
+        arm = convert(Array{Int64,1},m.Treatment) .+ 1
+        a0 = convert(Array{Int64,1},m.AgeMin)
+        a1 = convert(Array{Int64,1},m.AgeMax)
+        append!(moms_collect,[(TE=TE,wght=wght,arm=arm,a0=a0,a1=a1)])
+    end
+    TEmoms = (;zip(site_list,moms_collect)...)
+    opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
+    res2 = optimize(opt,x0)
+    B[:,b] = res2[2]
+end
+
+
 
 break
 

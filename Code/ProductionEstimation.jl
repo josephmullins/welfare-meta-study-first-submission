@@ -3,7 +3,7 @@
 function ProdPars(nmeas)
     np = (δI = 2,gN = 2, gF = 2, δθ=1, λ=nmeas-1)
     lb = (δI = -Inf*ones(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
-    ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = 1., λ = Inf*ones(nmeas-1))
+    ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = Inf, λ = Inf*ones(nmeas-1))
     δI = 10. *ones(2)
     gN = zeros(2) #log.([1.5,1.5])
     gF = zeros(2) #log.([0.7,0.7])
@@ -154,6 +154,75 @@ function GetTreatmentEffects(pars_prod,pars,ChoiceProbs,site_list,budget,moments
         append!(TE_collect,[TE])
     end
     return (;zip(site_list,TE_collect)...)
+end
+
+function GetVariance(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    dT = ForwardDiff.jacobian(x->GetTreatmentEffectsStacked(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features),x)
+    TE,W = GetTreatmentEffectsStacked(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features,true)
+    W = diagm(0 => convert(Array{Float64,1},W))
+    dT = convert(Array{Float64,2},dT)
+    Vinv = dT'*W*dT
+    Inull = (sum(Vinv,dims=2).==0)[:]
+    np = length(x)
+    V = zeros(np,np)
+    V[.!Inull,.!Inull] .= inv(Vinv[.!Inull,.!Inull])
+    return V
+end
+
+function GetTreatmentEffectsStacked(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features,getwghts=false)
+    pars_prod = UpdatePars(x,pars_prod,vars)
+    λ = [1;pars_prod.λ]
+    TE_vec = []
+    wghts_vec = []
+    for i=1:length(site_list)
+        sname = site_list[i]
+        #println(sname)
+        moms = getfield(moments,sname) #<- structure: age0,age1,1
+        nmom = size(moms.TE)[1]
+        π0 = site_features.π0[i,:,:]
+        #wght = getfield(wghts,sname)
+        year_meas = site_features.year_meas[i]
+        Y = getfield(budget,sname)
+        P = getfield(ChoiceProbs,sname)
+        TH = zeros(Real,site_features.n_arms[i],NK,17)
+        price = site_features.prices[i,1]
+        TH[1,:,:] =  GetChildOutcomesStatic(year_meas,P.pA[1],P.pWork[1],P.pF[1],Y[1,:,:,:,:],pars_prod,price,pars.wq)
+
+        Abar = size(Y)[1]
+        #moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+        #Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
+        for a = 2:site_features.n_arms[i]
+            WR = site_features.work_reqs[i,a]
+            price = site_features.prices[i,a]
+            abar = min(Abar,a)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                TH[a,:,:] = GetChildOutcomesDynamic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],pars_prod,price,pars.wq)
+            else
+                TH[a,:,:] = GetChildOutcomesStatic(year_meas,P.pA[a],P.pWork[a],P.pF[a],Y[abar,:,:,:,:],pars_prod,price,pars.wq)
+            end
+        end
+        TE = TreatmenEffects(TH,π0,moms.a0,moms.a1,moms.arm)
+        for k=1:size(moms.TE)[2]
+            append!(TE_vec,TE*λ[k])
+            append!(wghts_vec,moms.wght[:,k])
+        end
+    end
+    if getwghts
+        return TE_vec,wghts_vec
+    else
+        return TE_vec
+    end
+end
+
+function testfunction(x)
+    mom = zeros(Real,2)
+    for i=1:2
+        f = (x[1]-2.)^2
+        append!(mom,f)
+    end
+    return mom
 end
 
 function InspectTreatFitProduction!(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
