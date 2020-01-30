@@ -129,8 +129,8 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
             end
             TE = moms[:,a] .- moms[:,1]
             TE_mod = moms_model .- moms_control
-            #Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
-            Qn += sum(wght[:,a].*(moms_model .- moms[:,a]).^2)
+            Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+            #Qn += sum(wght[:,a].*(moms_model .- moms[:,a]).^2)
         end
 
         # for a = 1:site_features.n_arms[i]
@@ -363,7 +363,7 @@ function GetMoments(pars,Y,price,WR,T,π0,year_meas,wrapped=false)
     if wrapped
         return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
     else
-        return [EA; EH; Care]
+        return [EA; EH; Care; Inc]
     end
 end
 
@@ -376,7 +376,7 @@ function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas,wrapped
     if wrapped
         return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
     else
-        return [EA; EH; Care]
+        return [EA; EH; Care; Inc]
     end
 end
 

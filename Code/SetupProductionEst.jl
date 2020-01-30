@@ -7,7 +7,7 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:Achievement] #<- could we possibly get more data here?
+measures = [:AchieveBelowAverage] #<- could we possibly get more data here?
 #measures = [:Achievement,:Math]
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 SE = CSV.read("../Data/ChildTreatmentEffectsSEs.csv")
@@ -56,7 +56,7 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI] #,:gN,:gF,:λ]
+vlist = [:δI,:δθ,:gN,:gF] #,:λ]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)

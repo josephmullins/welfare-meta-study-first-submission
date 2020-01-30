@@ -85,83 +85,93 @@ num_sites = 8
 # ------------ Set up moments and wghts ---------------- #
 D = CSV.read("../Data/Annualized_Moments.csv")
 # CTJF
-ctjf = zeros(4*2+1,2)
+ctjf = zeros(4*3+1,2)
 w_ctjf = 100*ones(4*2+1,2)
-#w_ctjf[:,1] .= 10.
+w_ctjf[:,1] .= 10.
+w_ctjf = [w_ctjf;[zeros(4) ones(4)]]
 for a=0:1
     d = D[(D.Site.=="CTJF") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="CTJF") .& (C.Arm.==a),:]
-    ctjf[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    ctjf[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 # FTP
-ftp = zeros(4*2+1,2)
+ftp = zeros(4*3+1,2)
 w_ftp = 100*ones(4*2+1,2)
-#w_ftp[:,1] .= 10.
+w_ftp[:,1] .= 10.
+w_ftp = [w_ftp;[zeros(4) ones(4)]]
 for a=0:1
     d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
-    ftp[:,a+1] = [d.Participation[1:4]/100;d.LFP[1:4]/100;c.UsePaid[1]]
+    ftp[:,a+1] = [d.Participation[1:4]/100;d.LFP[1:4]/100;c.UsePaid[1];d.TotInc[1:4]/52]
 end
 
 # LAGAIN
-LA = zeros(3*2+1,2)
+LA = zeros(3*3+1,2)
 w_LA = 100*ones(3*2+1,2)
-#w_LA[:,1] .= 10.
+w_LA[:,1] .= 10.
+w_LA = [w_LA;[zeros(3) ones(3)]]
 for a=0:1
     d = D[(D.Site.=="LA-GAIN") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="LAGAIN") .& (C.Arm.==a),:]
-    LA[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    LA[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 # MFIP-LR
-mfiplr = zeros(4*2+1,3)
+mfiplr = zeros(4*3+1,3)
 w_mfiplr = 100*ones(4*2+1,3)
-#w_mfiplr[:,1] .= 10.
+w_mfiplr[:,1] .= 10.
+w_mfiplr = [w_mfiplr;[zeros(4) ones(4) ones(4)]]
 for a=0:2
     d = D[(D.Site.=="MFIP-LR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="MFIP-LR") .& (C.Arm.==a),:]
-    mfiplr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    mfiplr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 # MFIP-RA
-mfipra = zeros(4*2+1,3)
+mfipra = zeros(4*3+1,3)
 #w_mfipra = 100*ones(4*2+1,3)
 w_mfipra[:,1] .= 10.
 #w_mfipra[:,3] .= 0.
+w_mfipra = [w_mfipra;[zeros(4) ones(4) ones(4)]]
+
 for a=0:2
     d = D[(D.Site.=="MFIP-RA") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="MFIP-RA") .& (C.Arm.==a),:]
-    mfipra[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    mfipra[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 # NEWWS-A
-newwsa = zeros(5*2+1,2)
+newwsa = zeros(5*3+1,2)
 w_newwsa = 100*ones(5*2+1,2)
-#w_newwsa[:,1] .= 10.
+w_newwsa[:,1] .= 10.
+w_newwsa = [w_newwsa;[zeros(5) ones(5)]]
 for a=0:1
     d = D[(D.Site.=="Atlanta") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-A") .& (C.Arm.==a),:]
-    newwsa[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    newwsa[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 # NEWWS-G
-newwsg = zeros(5*2+1,2)
+newwsg = zeros(5*3+1,2)
 w_newwsg = 100*ones(5*2+1,2)
-#w_newwsg[:,1] .= 10.
+w_newwsg[:,1] .= 10.
+w_newwsg = [w_newwsg;[zeros(5) ones(5)]]
 for a=0:1
     d = D[(D.Site.=="GR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-G") .& (C.Arm.==a),:]
-    newwsg[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    newwsg[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 # NEWWS-R
-newwsr = zeros(5*2+1,2)
+newwsr = zeros(5*3+1,2)
 w_newwsr = 100*ones(5*2+1,2)
-#w_newwsr[:,1] .= 10.
+w_newwsr[:,1] .= 10.
+w_newwsr = [w_newwsr;[zeros(5) ones(5)]]
+
 for a=0:1
     d = D[(D.Site.=="Riverside") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-R") .& (C.Arm.==a),:]
-    newwsr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1]]
+    newwsr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
 end
 
 moments = (CTJF = ctjf, FTP = ftp, LAGAIN = LA, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr)
