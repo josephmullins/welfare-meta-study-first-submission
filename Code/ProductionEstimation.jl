@@ -2,12 +2,12 @@
 # we need to think about how to do this a little better
 function ProdPars(nmeas)
     np = (δI = 2,gN = 2, gF = 2, δθ=1, λ=nmeas-1)
-    lb = (δI = -Inf*ones(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
+    lb = (δI = 0*ones(2),gN = 0*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
     ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = Inf, λ = Inf*ones(nmeas-1))
-    δI = 10. *ones(2)
+    δI = 0.1 *ones(2)
     gN = zeros(2) #log.([1.5,1.5])
     gF = zeros(2) #log.([0.7,0.7])
-    δθ = 0.5
+    δθ = 0.
     #λ = zeros(nmeas-1)
     λ = ones(nmeas-1)
     #λ = [11.,15.,0.]
@@ -162,7 +162,7 @@ function GetVariance(x,vars,pars_prod,pars,ChoiceProbs,site_list,budget,moments,
     W = diagm(0 => convert(Array{Float64,1},W))
     dT = convert(Array{Float64,2},dT)
     Vinv = dT'*W*dT
-    Inull = (sum(Vinv,dims=2).==0)[:]
+    Inull = ((sum(Vinv,dims=2).==0)[:]) .| (x.==0.)
     np = length(x)
     V = zeros(np,np)
     V[.!Inull,.!Inull] .= inv(Vinv[.!Inull,.!Inull])
@@ -216,14 +216,6 @@ function GetTreatmentEffectsStacked(x,vars,pars_prod,pars,ChoiceProbs,site_list,
     end
 end
 
-function testfunction(x)
-    mom = zeros(Real,2)
-    for i=1:2
-        f = (x[1]-2.)^2
-        append!(mom,f)
-    end
-    return mom
-end
 
 function InspectTreatFitProduction!(pars_prod,pars,ChoiceProbs,site_list,budget,moments,site_features)
     Qn = 0

@@ -129,7 +129,8 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
             end
             TE = moms[:,a] .- moms[:,1]
             TE_mod = moms_model .- moms_control
-            Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+            #Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+            Qn += sum(wght[:,a].*(moms_model .- moms[:,a]).^2)
         end
 
         # for a = 1:site_features.n_arms[i]

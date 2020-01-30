@@ -87,7 +87,7 @@ D = CSV.read("../Data/Annualized_Moments.csv")
 # CTJF
 ctjf = zeros(4*2+1,2)
 w_ctjf = 100*ones(4*2+1,2)
-w_ctjf[:,1] .= 10.
+#w_ctjf[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="CTJF") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="CTJF") .& (C.Arm.==a),:]
@@ -96,7 +96,7 @@ end
 # FTP
 ftp = zeros(4*2+1,2)
 w_ftp = 100*ones(4*2+1,2)
-w_ftp[:,1] .= 10.
+#w_ftp[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
@@ -106,7 +106,7 @@ end
 # LAGAIN
 LA = zeros(3*2+1,2)
 w_LA = 100*ones(3*2+1,2)
-w_LA[:,1] .= 10.
+#w_LA[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="LA-GAIN") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="LAGAIN") .& (C.Arm.==a),:]
@@ -116,7 +116,7 @@ end
 # MFIP-LR
 mfiplr = zeros(4*2+1,3)
 w_mfiplr = 100*ones(4*2+1,3)
-w_mfiplr[:,1] .= 10.
+#w_mfiplr[:,1] .= 10.
 for a=0:2
     d = D[(D.Site.=="MFIP-LR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="MFIP-LR") .& (C.Arm.==a),:]
@@ -125,7 +125,7 @@ end
 
 # MFIP-RA
 mfipra = zeros(4*2+1,3)
-w_mfipra = 100*ones(4*2+1,3)
+#w_mfipra = 100*ones(4*2+1,3)
 w_mfipra[:,1] .= 10.
 #w_mfipra[:,3] .= 0.
 for a=0:2
@@ -137,7 +137,7 @@ end
 # NEWWS-A
 newwsa = zeros(5*2+1,2)
 w_newwsa = 100*ones(5*2+1,2)
-w_newwsa[:,1] .= 10.
+#w_newwsa[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="Atlanta") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-A") .& (C.Arm.==a),:]
@@ -147,7 +147,7 @@ end
 # NEWWS-G
 newwsg = zeros(5*2+1,2)
 w_newwsg = 100*ones(5*2+1,2)
-w_newwsg[:,1] .= 10.
+#w_newwsg[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="GR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-G") .& (C.Arm.==a),:]
@@ -157,7 +157,7 @@ end
 # NEWWS-R
 newwsr = zeros(5*2+1,2)
 w_newwsr = 100*ones(5*2+1,2)
-w_newwsr[:,1] .= 10.
+#w_newwsr[:,1] .= 10.
 for a=0:1
     d = D[(D.Site.=="Riverside") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-R") .& (C.Arm.==a),:]
