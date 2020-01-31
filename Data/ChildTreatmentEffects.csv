@@ -1,6 +1,6 @@
 Site,Treatment,YearOfMeasurement,AgeMin,AgeMax,N_control,N_treat,BPI,PB,Suspend,Repeat,Achievement,AchieveBelowAverage,Math,AboveMath,BelowMath,Read,AboveRead,BelowRead
-CTJF,1,,2,5,412,392,-1.2,,,,0,-3.6,,,,,,
-CTJF,1,,6,9,356,308,-0.6,,,,0,0.9,,,,,,
+CTJF,1,3,2,5,412,392,-1.2,,,,0,-3.6,,,,,,
+CTJF,1,3,6,9,356,308,-0.6,,,,0,0.9,,,,,,
 CTJF,1,3,2,9,721,748,-0.9,1,-1.2,,0,-1.4,,,,,,
 CTJF,1,3,10,14,492,578,,,-0.1,,-0.3,4.8,,,,,,
 FTP,1,4,1,8,565,543,-0.1,-1.2,-0.6,1,0.1,-2.1,,,,,,

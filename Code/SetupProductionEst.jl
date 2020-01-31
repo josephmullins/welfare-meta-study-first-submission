@@ -7,7 +7,7 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:AchieveBelowAverage] #<- could we possibly get more data here?
+measures = [:Achievement]#,:AchieveBelowAverage,:Math,:Read] #<- could we possibly get more data here?
 #measures = [:Achievement,:Math]
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 SE = CSV.read("../Data/ChildTreatmentEffectsSEs.csv")
@@ -34,11 +34,11 @@ for s in site_list
     N = convert(Array{Float64,1},m.N_control+m.N_treat)
     tevar = 4 ./N
     wght = ones(1,length(measures)) ./tevar
-    Idrop = [ismissing.(TE_[v]) for v in measures] #convert(Array{Bool,2},ismissing.(TE))
+    Idrop = [ismissing.(TE_[v])[:] for v in measures] #convert(Array{Bool,2},ismissing.(TE))
     TE = zeros(size(TE_)) #convert(Array{Float64,2},coalesce.(TE,0.))
     for i=1:length(measures)
         TE[:,i] = convert(Array{Float64,1},coalesce.(TE_[measures[i]],0.) ./se[measures[i]])
-        #wght[Idrop[i],i] .= 0.
+        wght[Idrop[i],i] .= 0.
     end
     arm = convert(Array{Int64,1},m.Treatment) .+ 1
     a0 = convert(Array{Int64,1},m.AgeMin)
@@ -56,7 +56,7 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI,:δθ,:gN,:gF] #,:λ]
+vlist = [:δI,:gN,:gF] #,:gN,:gF] #,:λ]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)
@@ -73,7 +73,26 @@ T = SE[:,measures]
 for v in measures
     T[v] = SE[v] .* sqrt.(4 ./(D.N_control+D.N_treat))
 end
+
 break
+V = Symmetric(V)
+wage = 7.50
+B = zeros(100)
+for b=1:100
+    p = copy(res[2])
+    p[3:end] .+= rand(MultivariateNormal(V[3:end,3:end]))
+    pp = UpdatePars(p,pars_prod,vlist)
+    th = 0
+    for t=1:3
+        th = pp.δI[1]*log((30*wage + (112-30)*pars2.wq)/(112*pars2.wq)) - pp.gN[1] + pp.δθ*th
+    end
+    B[b] = th
+end
+
+
+
+break
+
 B = zeros(2,100)
 for b=1:100
     moms_collect = []
@@ -163,6 +182,51 @@ for i=1:8
         append!(TE,te)
     end
 end
+
+B = zeros(2,100)
+for b=1:100
+    LFP = []
+    LFP2 = []
+    INC = []
+    INC2 = []
+    TE = []
+    TEm = []
+    WGHT = []
+    for i=1:8
+        sname = site_list[i]
+        #println(sname)
+        m = data_moments[sname]
+        m2 = moms[sname]
+        for a=2:site_features.n_arms[i]
+            ii = TEmoms[sname].arm.==a
+            wght = TEmoms[sname].wght[ii,1]
+            lfp = (mean(m[a].LFP) - mean(m[1].LFP))*ones(sum(ii))
+            lfp2 = (mean(m2[a].LFP) - mean(m2[1].LFP))*ones(sum(ii))
+            te = TEmoms[sname].TE[ii,1]
+            for t=1:length(te)
+                if wght[t]>0
+                    se = sqrt(1/wght[t])
+                    te[t] += rand(Normal(0.,se))
+                end
+            end
+            tem = TEmod[sname][ii]
+            inc = (mean(m[a].Inc) - mean(m[1].Inc))*ones(sum(ii))
+            inc2 =(mean(m2[a].Inc) - mean(m2[1].Inc) - lfp2[1]*pars.wq*30)*ones(sum(ii))
+            append!(LFP,lfp)
+            append!(LFP2,lfp)
+            append!(INC,inc)
+            append!(INC2,inc2)
+            append!(TE,te)
+            append!(WGHT,wght)
+        end
+        scatter(INC[WGHT.>0]./LFP[WGHT.>0],TE[WGHT.>0])
+        B[1,b] = sum(TE.*INC.*WGHT)/sum(WGHT)
+        B[2,b] = 100*sum(TE.*LFP.*WGHT)/sum(WGHT)
+    end
+end
+
+meas = [:Achievement,:AchieveBelowAverage,:Repeat,:Suspend,:Math,:Read,:BPI,:PB]
+
 
 for i=1:8
     sname = site_list[i]

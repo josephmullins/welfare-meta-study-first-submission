@@ -3,7 +3,7 @@
 function ProdPars(nmeas)
     np = (δI = 2,gN = 2, gF = 2, δθ=1, λ=nmeas-1)
     lb = (δI = 0*ones(2),gN = -Inf*ones(2),gF = -Inf*ones(2), δθ = 0., λ = -Inf*ones(nmeas-1))
-    ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = 1., λ = Inf*ones(nmeas-1))
+    ub = (δI = Inf*ones(2),gN = Inf*ones(2),gF = Inf*ones(2), δθ = 1, λ = Inf*ones(nmeas-1))
     δI = 0.1 *ones(2)
     gN = zeros(2) #log.([1.5,1.5])
     gF = zeros(2) #log.([0.7,0.7])

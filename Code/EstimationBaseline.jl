@@ -106,6 +106,7 @@ function CriterionP(pars,site_list,budget,moments,wghts,site_features)
         #αH = pars.αH[(pos+1):(pos+site_features.T[i])]
         pars_site = GetSitePars(pars,i)
         sname = site_list[i]
+        #println(sname)
         Y = getfield(budget,sname)
         moms = getfield(moments,sname)
         π0 = site_features.π0[i,:,:]

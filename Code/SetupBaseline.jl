@@ -5,7 +5,7 @@ using DelimitedFiles
 
 # ---- Set up Experiment Features
 C = CSV.read("../Data/ChildCareMoms_estimated.csv")
-
+C.UsePaid = C.UsePaid.*C.Emp/100
 num_sites = 8
 site_list = [:CTJF,:FTP,:LAGAIN,:MFIPLR,:MFIPRA,:NEWWSA,:NEWWSG,:NEWWSR]
 site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
@@ -87,8 +87,8 @@ D = CSV.read("../Data/Annualized_Moments.csv")
 # CTJF
 ctjf = zeros(4*3+1,2)
 w_ctjf = 100*ones(4*2+1,2)
-w_ctjf[:,1] .= 10.
-w_ctjf = [w_ctjf;[zeros(4) ones(4)]]
+w_ctjf[1:4*2,1] .= 10.
+w_ctjf = [w_ctjf;[zeros(4) 0.1*ones(4)]]
 for a=0:1
     d = D[(D.Site.=="CTJF") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="CTJF") .& (C.Arm.==a),:]
@@ -97,8 +97,8 @@ end
 # FTP
 ftp = zeros(4*3+1,2)
 w_ftp = 100*ones(4*2+1,2)
-w_ftp[:,1] .= 10.
-w_ftp = [w_ftp;[zeros(4) ones(4)]]
+w_ftp[1:4*2,1] .= 10.
+w_ftp = [w_ftp;[zeros(4) 0.1*ones(4)]]
 for a=0:1
     d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
@@ -108,8 +108,8 @@ end
 # LAGAIN
 LA = zeros(3*3+1,2)
 w_LA = 100*ones(3*2+1,2)
-w_LA[:,1] .= 10.
-w_LA = [w_LA;[zeros(3) ones(3)]]
+w_LA[1:2*3,1] .= 10.
+w_LA = [w_LA;[zeros(3) 0.1*ones(3)]]
 for a=0:1
     d = D[(D.Site.=="LA-GAIN") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="LAGAIN") .& (C.Arm.==a),:]
@@ -119,8 +119,8 @@ end
 # MFIP-LR
 mfiplr = zeros(4*3+1,3)
 w_mfiplr = 100*ones(4*2+1,3)
-w_mfiplr[:,1] .= 10.
-w_mfiplr = [w_mfiplr;[zeros(4) ones(4) ones(4)]]
+w_mfiplr[1:2*4,1] .= 10.
+w_mfiplr = [w_mfiplr;[zeros(4) 0.1*ones(4) 0.1*ones(4)]]
 for a=0:2
     d = D[(D.Site.=="MFIP-LR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="MFIP-LR") .& (C.Arm.==a),:]
@@ -129,10 +129,10 @@ end
 
 # MFIP-RA
 mfipra = zeros(4*3+1,3)
-#w_mfipra = 100*ones(4*2+1,3)
-w_mfipra[:,1] .= 10.
+w_mfipra = 100*ones(4*2+1,3)
+w_mfipra[1:2*4,1] .= 10.
 #w_mfipra[:,3] .= 0.
-w_mfipra = [w_mfipra;[zeros(4) ones(4) ones(4)]]
+w_mfipra = [w_mfipra;[zeros(4) 0.1*ones(4) 0.1*ones(4)]]
 
 for a=0:2
     d = D[(D.Site.=="MFIP-RA") .& (D.Treatment.==a),:]
@@ -143,8 +143,8 @@ end
 # NEWWS-A
 newwsa = zeros(5*3+1,2)
 w_newwsa = 100*ones(5*2+1,2)
-w_newwsa[:,1] .= 10.
-w_newwsa = [w_newwsa;[zeros(5) ones(5)]]
+w_newwsa[1:5*2,1] .= 10.
+w_newwsa = [w_newwsa;[zeros(5) 0.1*ones(5)]]
 for a=0:1
     d = D[(D.Site.=="Atlanta") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-A") .& (C.Arm.==a),:]
@@ -154,8 +154,8 @@ end
 # NEWWS-G
 newwsg = zeros(5*3+1,2)
 w_newwsg = 100*ones(5*2+1,2)
-w_newwsg[:,1] .= 10.
-w_newwsg = [w_newwsg;[zeros(5) ones(5)]]
+w_newwsg[1:5*2,1] .= 10.
+w_newwsg = [w_newwsg;[zeros(5) 0.1*ones(5)]]
 for a=0:1
     d = D[(D.Site.=="GR") .& (D.Treatment.==a),:]
     c = C[(C.Site.=="NEWWS-G") .& (C.Arm.==a),:]
@@ -165,8 +165,8 @@ end
 # NEWWS-R
 newwsr = zeros(5*3+1,2)
 w_newwsr = 100*ones(5*2+1,2)
-w_newwsr[:,1] .= 10.
-w_newwsr = [w_newwsr;[zeros(5) ones(5)]]
+w_newwsr[1:5*2,1] .= 10.
+w_newwsr = [w_newwsr;[zeros(5) 0.1*ones(5)]]
 
 for a=0:1
     d = D[(D.Site.=="Riverside") .& (D.Treatment.==a),:]
