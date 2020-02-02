@@ -7,8 +7,9 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:Achievement]#,:AchieveBelowAverage,:Math,:Read] #<- could we possibly get more data here?
+measures = [:Achievement,:Repeat,:Math]#,:Math,:Read] #<- could we possibly get more data here?
 #measures = [:Achievement,:Math]
+
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
 SE = CSV.read("../Data/ChildTreatmentEffectsSEs.csv")
 #D.Achievement = D.Achievement
@@ -40,11 +41,16 @@ for s in site_list
         TE[:,i] = convert(Array{Float64,1},coalesce.(TE_[measures[i]],0.) ./se[measures[i]])
         wght[Idrop[i],i] .= 0.
     end
+    if s.==:MFIPRA
+        wght .= 0.
+    end
     arm = convert(Array{Int64,1},m.Treatment) .+ 1
     a0 = convert(Array{Int64,1},m.AgeMin)
     a1 = convert(Array{Int64,1},m.AgeMax)
     append!(moms_collect,[(TE=TE,wght=wght,arm=arm,a0=a0,a1=a1)])
 end
+
+
 TEmoms = (;zip(site_list,moms_collect)...)
 
 # Initialize the parameters
