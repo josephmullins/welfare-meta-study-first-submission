@@ -7,7 +7,8 @@ include("ProductionEstimation.jl")
 #measures = [:AchieveBelowAverage,:PB,:BPI,:Math,:BelowMath,:Read,:BelowRead,:Repeat]
 #measures = [:Achievement,:AchieveBelowAverage,:Math,:BelowMath,:Read,:BelowRead]
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
-measures = [:Achievement,:Repeat,:Math]#,:Math,:Read] #<- could we possibly get more data here?
+measures = [:Achievement,:Repeat] #,:Math]#,:Math,:Read] #<- could we possibly get more data here?
+measures = [:BPI,:PB] #,:Suspend]
 #measures = [:Achievement,:Math]
 
 D = CSV.read("../Data/ChildTreatmentEffects.csv")
@@ -62,7 +63,7 @@ CP = GetChoiceProbsAll(pars2,site_list,budget,site_features);
 
 #ProductionCriterion(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 #vlist = [:gN,:gF,:δI,:δθ]
-vlist = [:δI,:gN,:gF] #,:gN,:gF] #,:λ]
+vlist = [:δI] #,:gN,:gF] #,:gN,:gF] #,:λ]
 opt,x0 = GetOptimization(vlist,pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 
 res = optimize(opt,x0)
@@ -138,7 +139,7 @@ end
 break
 
 
-TEmod = GetTreatmentEffects(pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
+TEmod = GetTreatmentEffects(pars_prod,pars2,CP,site_list,budget,TEmoms,site_features)
 
 # opt,x0 = GetOptimization([:λ],pars_prod,pars,CP,site_list,budget,TEmoms,site_features)
 #
@@ -180,7 +181,7 @@ for i=1:8
         inc2 =(mean(m2[a].Inc) - mean(m2[1].Inc) - lfp2[1]*pars.wq*30)*ones(sum(ii))
         scatter(inc,te,color="blue")
         scatter(inc2,te,color="red")
-        scatter(inc2,tem,color="pink")
+        scatter(inc2,tem,color="orange")
         append!(LFP,lfp)
         append!(LFP2,lfp)
         append!(INC,inc)
@@ -225,8 +226,8 @@ for b=1:100
             append!(TE,te)
             append!(WGHT,wght)
         end
-        scatter(INC[WGHT.>0]./LFP[WGHT.>0],TE[WGHT.>0])
-        B[1,b] = sum(TE.*INC.*WGHT)/sum(WGHT)
+        #scatter(INC[WGHT.>0]./LFP[WGHT.>0],TE[WGHT.>0])
+        B[1,b] = sum(TE.*INC2.*WGHT)/sum(WGHT)
         B[2,b] = 100*sum(TE.*LFP.*WGHT)/sum(WGHT)
     end
 end

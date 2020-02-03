@@ -250,7 +250,7 @@ function GetChildOutcomesStatic(year_meas,pA,pWork,pF,Y,pars_prod,price,wq)
 				age = a0+t-1
 				I = zeros(Real,2)
 				if age<=17
-					if age<=5
+					if age<=9
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
 						gN,gF,δI = pars_prod.gN[2],pars_prod.gF[2],pars_prod.δI[2]
@@ -284,7 +284,7 @@ function GetChildOutcomesDynamic(year_meas,pA,pWork,pF,Y,Y_I,pars_prod,price,wq)
 				age = a0+t-1
 				Imean = 0
 				if age<=17
-					if age<=5
+					if age<=9
 						gN,gF,δI = pars_prod.gN[1],pars_prod.gF[1],pars_prod.δI[1]
 					else
 						gN,gF,δI = pars_prod.gN[2],pars_prod.gF[2],pars_prod.δI[2]
