@@ -12,7 +12,7 @@ site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS
 site_str2 = ["CTJF","FTP","LA-GAIN","MFIP-LR","MFIP-RA","Atlanta","GR","Riverside"]
 
 n_arms = [2,2,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to time limits
-work_reqs = [[0,1,0,0,0,0,0,0] [1,0,1,1,1,1,1,1] zeros(8)] #<- FTP has work reqs in both
+work_reqs = [[0,1,0,0,0,0,0,0] [1,1,1,1,1,1,1,1] zeros(8)] #<- FTP has work reqs in both
 years = [4,4,3,4,4,5,5,5]
 year_meas = [3,4,2,3,3,2,2,2]
 yb = [1996,1994,1996,1994,1994,1991,1991,1991]
@@ -85,7 +85,7 @@ for i=1:num_sites
         c = C[(C.Site.==site_str[i]) .& (C.Arm.==(a-1)),:]
         moms[:,a] = [d.Participation[1:years[i]]/100; d.LFP[1:years[i]]/100; c.UsePaid[1]]
         se[:,a] = sqrt.(2*(moms[:,a].*(1 .- moms[:,a]))/sample_size[i])
-        se[end,a] = (moms[end,a]*(1-moms[end,a])/c.N[1])
+        se[end,a] = sqrt(moms[end,a]*(1-moms[end,a])/c.N[1])
     end
     append!(moms_collect,[(moms=moms,se=se)])
 end

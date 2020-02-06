@@ -1,4 +1,5 @@
 using Distributions
+using ForwardDiff
 
 function ProdPars(nmeas)
     pos = (δI = 1:2, δθ = 3, gN = 4:5,gF=6:7,λ = 8:(8+nmeas-2))
@@ -28,42 +29,42 @@ function ProdPars(nmeas)
     return x0,(pos=pos,Qp=proposal,P0=logprior)
 end
 
-#vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq,:gN]
+#vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF,:wq,:gN,:β]
 
 function ModPars(Γ = zeros(18),gF = 0.)
     pos = (αc = 1, αH = 2:9, αA = 10:17, σH = 18, σC = 19, αWR = 20:27, αWR2 = 28:35, αF = 36:43, wq = 44, gN = 45, β = 46)
     # αc
-    Qc(x) = exp.(log.(x) .+ quantile(Normal(),rand()))
+    Qc(x) = exp.(log.(x) .+ 0.005*quantile(Normal(),rand()))
     αc = 1.
     # gN
     gN = 0.
-    QN(x) = x + quantile(Normal(),rand())
+    QN(x) = x + 0.2*quantile(Normal(),rand())
     # αH
     αH = 1*ones(8)
-    QH(x) = x .+ quantile.(Normal(),rand(8))
+    QH(x) = x .+ 0.05*quantile.(Normal(),rand(8))
     # αA
-    QA(x) = x .+ quantile.(Normal(),rand(8))
+    QA(x) = x .+ 0.01*quantile.(Normal(),rand(8))
     αA = 1*ones(8)
     # αF
-    QF(x) = x .+ quantile.(Normal(),rand(8))
+    QF(x) = x .+ 0.15*quantile.(Normal(),rand(8))
     αF = zeros(8)
     # αWR
-    QWR(x) = x .+ quantile.(Normal(),rand(8))
+    QWR(x) = x .+ 0.05*quantile.(Normal(),rand(8))
     αWR = zeros(8)
     # αWR2
-    QWR2(x) = x .+ quantile.(Normal(),rand(8))
+    QWR2(x) = x .+ 0.05*quantile.(Normal(),rand(8))
     αWR2 = zeros(8)
     # σH
-    QσH(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    QσH(x) = exp(log(x) + 0.05*quantile(Normal(),rand()))
     σH = 1.
     # σC
-    QσC(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    QσC(x) = exp(log(x) + 0.05*quantile(Normal(),rand()))
     σC = 1.
     # β
-    Qβ(x) = rand()
+    Qβ(x) = 0.4 + 0.6*rand()
     β = 0.8
     # wq
-    Qwq(x) = 5*rand()
+    Qwq(x) = exp(log(x) + 0.01*quantile(Normal(),rand())) #<- 0.01
     wq = 1.
 
     x0 = [αc;αH;αA;σH;σC;αWR;αWR2;αF;wq;gN;β]
@@ -74,9 +75,9 @@ function ModPars(Γ = zeros(18),gF = 0.)
 end
 
 function HyperPars()
-    Q(x) = x + quantile(Normal(),rand())
+    Q(x) = x + 2.5*quantile(Normal(),rand())
     F(x) = -0.5*sum((x/50).^2)
-    Qσ(x) = exp(log(x) + 0.1*quantile(Normal(),rand()))
+    Qσ(x) = exp(log(x) + 0.75*quantile(Normal(),rand()))
     Fσ(x) = -0.5*((log(x)-0)/50)^2
     proposal = (αH=Q,σαH = Qσ, αA=Q,σαA = Qσ, αF=Q, σαF = Qσ, αWR=Q, σαWR = Qσ, αWR2=Q, σαWR2 = Qσ)
     logprior = (αH=F,σαH = Fσ, αA=F,σαA = Fσ, αF=F, σαF = Fσ, αWR=F, σαWR = Fσ, αWR2=F, σαWR2 = Fσ)
@@ -133,6 +134,13 @@ function LogLikeMod(x,pars,budget,moments,site_features)
         end
     end
     return Qn
+end
+
+function LogLikeMod(x,g,pars,budget,moments,site_features)
+    f0 = LogLikeMod(x,pars,budget,moments,site_features) + LogPrior([],x,mpars,hpars,:wq)
+    dL = ForwardDiff.gradient(x->LogLikeMod(x,pars,budget,moments,site_features),x)
+    g[:] = dL
+    return f0
 end
 
 function LogLikeProd(x,pars,ChoiceProbs,site_list,budget,moments,site_features)
@@ -213,13 +221,33 @@ function LogPrior(xh,xm,mpars,hpars,var)
     elseif (var==:αc) | (var==:σH) | (var==:σC)
         x = xm[mpars.pos[var]]
         return -0.5*(x/20)^2 - log(20)
-    elseif (var==:wq) | (var==:β) #<- both have uniform priors
+    elseif (var==:wq)
+        x = xm[mpars.pos[var]]
+        return -0.5*((log(x)-log(2.))/0.1)^2 - log(0.5)
+        #return (x<=5)*0 + (x>5)*-Inf
+    elseif (var==:β) #
         return 0.
     elseif var==:gN
         gN = xm[mpars.pos.gN]
         return -0.5*(gN/20)^2
     end
 end
+
+function LogLikeHyper(x,xmod,mpars,hpars)
+    ll = 0
+    for v in keys(mpars.pos)
+        ll += LogPrior(x,xmod,mpars,hpars,v)
+    end
+    return ll
+end
+
+function LogLikeHyper(x,g,xmod,mpars,hpars)
+    ll = LogLikeHyper(x,xmod,mpars,hpars)
+    dL = ForwardDiff.gradient(x->LogLikeHyper(x,xmod,mpars,hpars),x)
+    g[:] = dL
+    return ll
+end
+
 
 
 function IterateMCMCHyper(xcurrent,xmod,mpars,hpars,vname)
@@ -294,15 +322,17 @@ function GetChainMod(N,xm0,xh0,mlist,hlist,mpars,hpars,budget,moments,site_featu
         # first part: lower level
         xm = Pm[:,i-1]
         xh = Ph[:,i-1]
-        for v=1:nm
+        lp = 0
+        for v=1:nm # (1:nm)
             vname = mlist[v]
             #println(vname)
             xm,ll,aresult = IterateMCMCMod(xm,xh,vname,mpars,hpars,ll,budget,moments,site_features)
             Amhist[v,i] = aresult
             # update parameters
+            lp += LogPrior(xh,xm,mpars,hpars,vname)
         end
         Pm[:,i] = xm
-        Lhist[i] = ll
+        Lhist[i] = ll + lp
         # higher level: iterate over hyperparameters
         for v=1:nh
             vname = hlist[v]
