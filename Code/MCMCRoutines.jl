@@ -1,5 +1,5 @@
 
-function ParsBayes(nmeas)
+function ProdPars(nmeas)
     pos = (δI = 1:2, δθ = 3, gN = 4:5,gF=6:7,λ = 8:(8+nmeas-2))
     δI = 0.1 *ones(2)
     δθ = 1.
@@ -7,7 +7,7 @@ function ParsBayes(nmeas)
     μδ = log.([0.5,0.5])
     Fδ(x) = -0.5*sum(( ((log.(x) .- μδ)/0.5).^2)) - 2*log(0.5) #<- log prior
     Qθ(x) = rand() #exp.(log.(x) .+ 0.1*quantile.(Normal(),rand(2)))
-    Fθ(x) = x
+    Fθ(x) = 0. #<- constant density, uniform prior
     gN = zeros(2) #log.([1.5,1.5])
     gF = zeros(2) #log.([0.7,0.7])
     QN(x) = x .+ 0.25*quantile.(Normal(),rand(2))
@@ -27,12 +27,116 @@ function ParsBayes(nmeas)
     return x0,(pos=pos,Qp=proposal,P0=logprior)
 end
 
+#vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq,:gN]
+
+function ModPars(Γ = zeros(18),gF = 0.)
+    pos = (αc = 1, αH = [2:9], αA = [10:17], σH = 18, σC = 19, αWR = 20:27, αWR2 = 28:35, αF = 36:45, wq = 46, gN = 47)
+    # αc
+    Qc(x) = exp.(log.(x) .+ quantile(Normal(),rand()))
+    Fc(x) = -0.5*(log(x)/20)^2 # - log(20), irrelevant)
+    # gN
+    gN = 0.
+    QN(x) = x + quantile(Normal(),rand())
+    FN(x) = -0.5*(x/10)^2
+    # αH
+    QH(x) = x .+ quantile(Normal(),rand(8))
+    # αA
+    QA(x) = x .+ quantile(Normal(),rand(8))
+    FA(x) = -0.5*sum((x/50).^2)
+    # αF
+    QF(x) = x .+ quantile(Normal(),rand(8))
+    FF(x) = -0.5*sum((x/50).^2)
+    # αWR
+    QWR(x) = x .+ quantile(Normal(),rand(8))
+    FWR(x) = -0.5*sum((x/50).^2)
+    # αWR2
+    QWR2(x) = x .+ quantile(Normal(),rand(8))
+    FWR2(x) = -0.5*sum((x/50).^2)
+    # σH
+    QσH(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    FσH(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    # σC
+    QσC(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    FσC(x) = exp(log(x) + 0.2*quantile(Normal(),rand()))
+    # β
+    Qβ(x) = rand()
+    Fβ(x) = 0.
+    # wq
+    Qwq(x) = 5*rand()
+    Fwq(x) = 0.
+
+    proposal = (αc = Qc,αH = QH, αA = QA, αF = QF, αWR = QWR, αWR2 = QWR2, gN = QN, σH = QσH, σC = QσC, β = Qβ, wq = Qwq)
+    logprior = (αc = Fc,αH = FH, αA = FA, αF = FF, αWR = FWR, αWR2 = FWR2, gN = FN, σH = FσH, σC = FσC, β = Fβ, wq = Fwq)
+
+    return (pos = pos, Qp = proposal,P0 = logprior,gF = gF,Γ=Γ)
+end
+
+function HyperPars()
+    Q(x) = x + quantile(Normal(),rand())
+    F(x) = -0.5*sum((x/50).^2)
+    Qσ(x) = exp(log(x) + 0.1*quantile(Normal(),rand()))
+    Fσ(x) = -0.5*((log(x)-0)/50)^2
+    proposal = (αH=Q,σαH = Qσ, αA=Q,σαA = Qσ, αF=Q, σαF = Qσ, αWR=Q, σαWR = Qσ, αWR2=Q, σαWR2 = Qσ)
+    logprior = (αH=F,σαH = Fσ, αA=F,σαA = Fσ, αF=F, σαF = Fσ, αWR=F, σαWR = Fσ, αWR2=F, σαWR2 = Fσ)
+    parmap = (αH = :αH, σαH = :αH, αA = :αA,σαA = :αA,αF = :αF,σαF = :αF,αWR = :αWR,σαWR = :αWR,αWR2 = :αWR2,σαWR2 = :αWR2)
+    pos = (αH = 1, σαH = 2, αA = 3,σαA = 4,αF = 5,σαF = 6,αWR = 7,σαWR = 8,αWR2 = 9,σαWR2 = 10)
+    return (pos = pos, Qp = proposal, P0 = LogPrior, parmap = parmap)
+end
+
 function GetProdParameters(x,pars)
     return (δI = x[pars.pos.δI],δθ = x[pars.pos.δθ],gN = x[pars.pos.gN],gF = x[pars.pos.gF],λ = x[pars.pos.λ])
 end
 
+function GetModParameters(x,pars)
+    return (αc=x[pos.αc],gN=x[pos.gN],αH=x[pos.αH],αA=x[pos.αA],β=x[pos.β],σH=x[pos.σH],σC=x[pos.σC],wq=x[pos.wq],αWR=x[pos.αWR],αWR2=x[pos.αWR2],αF=x[pos.αF],gF = pars.gF,Γ=pars.Γ)
+end
 
-function LogLike(x,pars,ChoiceProbs,site_list,budget,moments,site_features)
+function GetSitePars(pars,i)
+    return (αc = pars.αc,gN = pars.gN,gF = pars.gF,wq = pars.wq,σC = pars.σC,σH = pars.σH,αWR = pars.αWR[i],αWR2 = pars.αWR2[i],αF = pars.αF[i],αH = pars.αH[i],αA = pars.αA[i],Γ=pars.Γ,β=pars.β)
+end
+
+
+function LogLikeMod(x,pars,budget,moments,site_features)
+    pmod = GetModParameters(x,pars)
+    Qn = 0
+    for i=1:length(site_features.site_list)
+        yb = site_features.yb[i]
+        T = site_features.T[i]
+        years = (yb+1-1991):(yb-1991+T)
+        pars_site = GetSitePars(pmod,i)
+        sname = site_features.site_list[i]
+        #println(sname)
+        Y = getfield(budget,sname)
+        moms = getfield(moments,sname)
+        π0 = site_features.π0[i,:,:]
+        wght = getfield(wghts,sname)
+        year_meas = site_features.year_meas[i]
+        Abar = size(Y)[1]
+        price = site_features.prices[i,1]
+        moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
+
+        for a = 1:site_features.n_arms[i]
+            WR = site_features.work_reqs[i,a]
+            price = site_features.prices[i,a]
+            abar = min(Abar,a)
+            if site_features.time_limits[i,a]==1
+                Y_I = budget[Symbol(sname,"_I")]
+                TLlength = site_features.TLlength[i,a]
+                moms_model = GetMomentsTimeLims(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,π0,TLlength,year_meas)
+            else
+                moms_model = GetMoments(pars_site,Y[abar,:,:,:,:],price,WR,T,π0,year_meas)
+            end
+            TE = moms[:,a] .- moms[:,1]
+            Qn += -0.5*sum(((moms.moments[:,a] .- moms_model[:,a])./moms.se[:,a]).^2) - sum(log.(moms.se[:,a]))
+            #TE_mod = moms_model .- moms_control
+            #Qn += sum(wght[:,a].*(TE .- TE_mod).^2)
+            #Qn += sum(wght[:,a].*(moms_model .- moms[:,a]).^2)
+        end
+    end
+    return Qn
+end
+
+function LogLikeProd(x,pars,ChoiceProbs,site_list,budget,moments,site_features)
     pars_prod = GetProdParameters(x,pars)
     wq = 1. # <- until we figure out a better way to estimate, leave at this
     Qn = 0
@@ -79,13 +183,72 @@ function LogLike(x,pars,ChoiceProbs,site_list,budget,moments,site_features)
     return Qn
 end
 
-function IterateMCMC(xcurrent,vname,pars,ll0,ChoiceProbs,site_list,budget,moments,site_features)
+# variable cases:
+#vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq,:gN]
+function LogPrior(xh,xm,mpars,hpars,var)
+    if var==:αH
+        αH = xm[mpars.pos.αH]
+        μα = xh[hpars.pos.αH]
+        σα = xh[hpars.pos.σαH]
+        return -0.5*sum(((αH - μα)/σα).^2) - length(α)*log(σα)
+    elseif var==:αA
+        α = xm[mpars.pos.αA]
+        μα = xh[hpars.pos.αA]
+        σα = xh[hpars.pos.σαA]
+        return -0.5*sum(((α - μα)/σα).^2) - length(α)*log(σα)
+    elseif var==:αF
+        α = xm[mpars.pos.αF]
+        μα = xh[hpars.pos.αF]
+        σα = xh[hpars.pos.σαF]
+        return -0.5*sum(((α - μα)/σα).^2) - length(α)*log(σα)
+    elseif var==:αWR
+        α = xm[mpars.pos.αWR]
+        μα = xh[hpars.pos.αWR]
+        σα = xh[hpars.pos.σαWR]
+        return -0.5*sum(((α - μα)/σα).^2) - length(α)*log(σα)
+    elseif var==:αWR2
+        α = xm[mpars.pos.αWR2]
+        μα = xh[hpars.pos.αWR2]
+        σα = xh[hpars.pos.σαWR2]
+        return -0.5*sum(((α - μα)/σα).^2) - length(α)*log(σα)
+    elseif var==:αC | var==:σA | var==:σC
+        x = xm[mpars.pos[var]]
+        return -0.5*(x/20)^2 - log(20)
+    elseif var==:wq | var==:β #<- both have uniform priors
+        return 0.
+    elseif var==:gN
+        gN = xm[mpars.pos.gN]
+        return -0.5*(gN/20)^2
+    end
+end
+
+
+function IterateMCMCHyper(xcurrent,xmod,mpars,hpars,vname)
+    par_current = xcurrent[hpars.pos[vname]]
+    par_propose = hpars.Qp[vname](par_current)
+    x1 = copy(xcurrent)
+    x1[hpars.pos[vname]] = par_propose
+    vapply = hpars.parmap[vname]
+    pars.pos[vname]
+    ll1 = LogPrior(x1,xmod,mpars,hpars,vapply)
+    ll0 = LogPrior(xcurrent,xmod,mpars,hpars,vapply)
+    p0 = hpars.P0[vname](par_current)
+    p1 = hpars.P0[vname](par_propose)
+    accept_prob = exp(ll1 + p1 - ll0 - p0)
+    if rand()<accept_prob
+        return x1,1
+    else
+        return xcurrent,0
+    end
+end
+
+function IterateMCMCProd(xcurrent,vname,pars,ll0,ChoiceProbs,site_list,budget,moments,site_features)
     # current parameter values
     par_current = xcurrent[pars.pos[vname]]
     par_propose = pars.Qp[vname](par_current)
     x1 = copy(xcurrent)
     x1[pars.pos[vname]] = par_propose
-    ll1 = LogLike(x1,pars,ChoiceProbs,site_list,budget,moments,site_features)
+    ll1 = LogLikeProd(x1,pars,ChoiceProbs,site_list,budget,moments,site_features)
     p0 = pars.P0[vname](par_current)
     p1 = pars.P0[vname](par_propose)
     accept_prob = exp(ll1 + p1 - ll0 - p0)
@@ -96,7 +259,66 @@ function IterateMCMC(xcurrent,vname,pars,ll0,ChoiceProbs,site_list,budget,moment
     end
 end
 
-function GetChain(N,x0,vlist,pars,ChoiceProbs,site_list,budget,moments,site_features)
+
+function IterateMCMCMod(xcurrent,xhyper,vname,mpars,hpars,ll0,budget,moments,site_features)
+    # current parameter values
+    par_current = xcurrent[mpars.pos[vname]]
+    par_propose = mpars.Qp[vname](par_current)
+    x1 = copy(xcurrent)
+    x1[mpars.pos[vname]] = par_propose
+    ll1 = LogLikeMod(x1,mpars,budget,moments,site_features)
+    p0 = LogPrior(xhyper,xcurrent,mpars,hpars,vname)
+    p1 = LogPrior(xhyper,x1,mpars,hpars,vname)
+    accept_prob = exp(ll1 + p1 - ll0 - p0)
+    if rand()<accept_prob
+        return x1,ll1,1
+    else
+        return xcurrent,ll0,0
+    end
+end
+
+function GetChainMod(N,xm0,xh0,mlist,hlist,mpars,hpars,budget,moments,site_features)
+    mnp = length(xm0)
+    hnp = length(xh0)
+    Ph = zeros(hnp,N)
+    Pm = zeros(mnp,N)
+    nm = length(mlist)
+    nh = length(hlist)
+    Amhist = zeros(nm,N)
+    Ahhist = zeros(nh,N)
+    Lhist = zeros(N)
+    # calculate initial likelihood
+    ll = LogLikeMod(xm0,mpars,budget,moments,site_features)
+    Pm[:,1] = xm0
+    Ph[:,1] = xh0
+    for i=2:N
+        # first part: lower level
+        xm = Pm[:,i-1]
+        xh = Ph[:,i-1]
+        for v=1:nm
+            vname = mlist[v]
+            xm,ll,aresult = IterateMCMCMod(xm,xh,vname,mpars,hpars,ll,budget,moments,site_features)
+            Amhist[v,i] = aresult
+            # update parameters
+        end
+        Pm[:,i] = xm
+        Lhist[i] = ll
+        # higher level: iterate over hyperparameters
+        for v=1:nh
+            vname = hlist[v]
+            xh,aresult = IterateMCMCHyper(xh,xm,mpars,hpars,vname)
+            Ahhist[v,i] = aresult
+        end
+
+        if mod(i,100)==0
+            println(i)
+        end
+    end
+    return Pm,Ph,Amhist,Ahhist,Lhist
+end
+
+
+function GetChainProd(N,x0,vlist,pars,ChoiceProbs,site_list,budget,moments,site_features)
     np = length(x0)
     P = zeros(np,N)
     nv = length(vlist)
@@ -109,7 +331,7 @@ function GetChain(N,x0,vlist,pars,ChoiceProbs,site_list,budget,moments,site_feat
         xcurrent = P[:,i-1]
         for v=1:nv
             vname = vlist[v]
-            xcurrent,ll,aresult = IterateMCMC(xcurrent,vname,pars,ll,ChoiceProbs,site_list,budget,moments,site_features)
+            xcurrent,ll,aresult = IterateMCMCProd(xcurrent,vname,pars,ll,ChoiceProbs,site_list,budget,moments,site_features)
             Ahist[v,i] = aresult
             # update parameters
         end
@@ -120,4 +342,31 @@ function GetChain(N,x0,vlist,pars,ChoiceProbs,site_list,budget,moments,site_feat
         end
     end
     return P,Ahist,Lhist
+end
+
+
+
+function GetMoments(pars,Y,price,WR,T,π0,year_meas,wrapped=false)
+    NK = size(π0)[1]
+    pA,pWork,pF = GetStaticProbs(pars,Y,price,WR,T,NK)
+    EA,EH,Inc = GetAggMoments(pA,pWork,π0,Y)
+    Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
+    if wrapped
+        return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
+    else
+        return [EA; EH; Care]
+    end
+end
+
+function GetMomentsTimeLims(pars,Y,Y_I,price,WR,T,π0,TLlength,year_meas,wrapped=false)
+    NK = size(π0)[1]
+    pA,pWork,pF = GetDynamicProbs(pars,Y,Y_I,price,WR,T,NK,TLlength)
+    EA,EH,Care,Inc = GetDynamicMoments(pA,pWork,pF,π0,year_meas,0,9,Y,Y_I)
+    #EA,EH = GetAggMoments(pA,pWork,π0)
+    #Care = GetMeanCare(year_meas,0,9,pA,pWork,pF,π0)
+    if wrapped
+        return (Part = EA,LFP=EH,Inc = Inc,Care=Care)
+    else
+        return [EA; EH; Care]
+    end
 end

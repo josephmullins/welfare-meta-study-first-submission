@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(reshape)
 setwd("~/GitHub/welfare-meta-study/Data/")
-D <- read.csv("ChildCareMoms.csv") %>% mutate(Subs = Subs/Emp, OOP = CPI*OOP/UsePaid*100, UsePaid = UsePaid/Emp)
+D <- read.csv("ChildCareMoms.csv") %>% mutate(Subs = Subs/Emp, OOP = CPI*OOP/(Emp/100*UsePaid/100)) #, UsePaid = UsePaid/Emp)
 ggplot(D,aes(x=Subs,y=UsePaid)) + geom_point() + geom_smooth(method="lm")
 
 D0 <- D %>% filter(Arm==0) %>% melt(c("Site","Year","Arm","AgeMin","AgeMax")) %>% select(-Arm)
@@ -27,9 +27,12 @@ write.csv(D,"ChildCareMoms_estimated.csv")
 
 mod3 <- lm(UsePaid ~ Price2,D)
 mod4 <- lm(log(UsePaid) ~ log(Price2),D)
+mod5 <- lm(log(UsePaid) ~ log(OOP),D)
 summary(mod3)
 summary(mod4)
+summary(mod5)
 #ok
+ggplot(D,aes(x=log(OOP),y=log(UsePaid))) + geom_point() + geom_smooth(method="lm",se=FALSE)
 
 mod3 <- lm(UsePaid ~ Subs,D)
 mod4 <- lm(log(UsePaid) ~ log(Subs),D)

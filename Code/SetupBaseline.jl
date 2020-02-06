@@ -5,14 +5,14 @@ using DelimitedFiles
 
 # ---- Set up Experiment Features
 C = CSV.read("../Data/ChildCareMoms_estimated.csv")
-C.UsePaid = C.UsePaid.*C.Emp/100
+#C.UsePaid = C.UsePaid.*C.Emp/100
 num_sites = 8
 site_list = [:CTJF,:FTP,:LAGAIN,:MFIPLR,:MFIPRA,:NEWWSA,:NEWWSG,:NEWWSR]
 site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
 site_str2 = ["CTJF","FTP","LA-GAIN","MFIP-LR","MFIP-RA","Atlanta","GR","Riverside"]
 
 n_arms = [2,2,2,3,3,2,2,2] #note; use only control arms for CTJF and FTP due to time limits
-work_reqs = [zeros(8) [1,0,1,1,1,1,1,1] zeros(8)]
+work_reqs = [[0,1,0,0,0,0,0,0] [1,0,1,1,1,1,1,1] zeros(8)] #<- FTP has work reqs in both
 years = [4,4,3,4,4,5,5,5]
 year_meas = [3,4,2,3,3,2,2,2]
 yb = [1996,1994,1996,1994,1994,1991,1991,1991]
@@ -49,7 +49,7 @@ for i=1:num_sites
     end
 end
 
-site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices, year_meas = year_meas, yb = yb, time_limits = time_limits,TLlength = TLlength)
+site_features = (T = years,n_arms = n_arms,work_reqs = work_reqs,π0 = π0,prices = Prices, year_meas = year_meas, yb = yb, time_limits = time_limits,TLlength = TLlength, site_list = site_list)
 
 # ------------ Set up budget function ------------------- #
 # order of budget function is: A x T x NK x 2 x 2
@@ -65,131 +65,46 @@ ftp_inel[2,:,:,:,1] .= 0
 # fix mfip budgets
 mfiplr = reshape(readdlm("Budgets/MFIP_LR_MAIN"),2,4,4,2,2)/4
 mfipra = reshape(readdlm("Budgets/MFIP_RA_MAIN"),2,4,4,2,2)/4
-# correct mistake in budget formula
-# for t=1:4;
-#     for k=2:4;
-#         earnings = mfiplr[1,t,k,1,2]
-#         D = mfiplr[1,t,k,2,1]
-#         mfiplr[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-#         earnings = mfipra[1,t,k,1,2]
-#         D = mfipra[1,t,k,2,1]
-#         mfipra[2,t,k,2,2] = earnings+max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
-#     end
-# end
 newwsa = reshape(readdlm("Budgets/NEWWS_A_MAIN"),1,5,4,2,2)/4
 newwsg = reshape(readdlm("Budgets/NEWWS_G_MAIN"),1,5,4,2,2)/4
 newwsr = reshape(readdlm("Budgets/NEWWS_R_MAIN"),1,5,4,2,2)/4
 budget = (CTJF = ctjf, FTP = ftp, LAGAIN = lagain, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr,FTP_I = ftp_inel,CTJF_I = ctjf_inel)
-num_sites = 8
+num_sites = length(site_list)
 
 # ------------ Set up moments and wghts ---------------- #
+sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 D = CSV.read("../Data/Annualized_Moments.csv")
-# CTJF
-ctjf = zeros(4*3+1,2)
-w_ctjf = 100*ones(4*2+1,2)
-w_ctjf[1:4*2,1] .= 10.
-w_ctjf = [w_ctjf;[zeros(4) 0.1*ones(4)]]
-for a=0:1
-    d = D[(D.Site.=="CTJF") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="CTJF") .& (C.Arm.==a),:]
-    ctjf[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-# FTP
-ftp = zeros(4*3+1,2)
-w_ftp = 100*ones(4*2+1,2)
-w_ftp[1:4*2,1] .= 10.
-w_ftp = [w_ftp;[zeros(4) 0.1*ones(4)]]
-for a=0:1
-    d = D[(D.Site.=="FTP") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="FTP") .& (C.Arm.==a),:]
-    ftp[:,a+1] = [d.Participation[1:4]/100;d.LFP[1:4]/100;c.UsePaid[1];d.TotInc[1:4]/52]
-end
-
-# LAGAIN
-LA = zeros(3*3+1,2)
-w_LA = 100*ones(3*2+1,2)
-w_LA[1:2*3,1] .= 10.
-w_LA = [w_LA;[zeros(3) 0.1*ones(3)]]
-for a=0:1
-    d = D[(D.Site.=="LA-GAIN") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="LAGAIN") .& (C.Arm.==a),:]
-    LA[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-# MFIP-LR
-mfiplr = zeros(4*3+1,3)
-w_mfiplr = 100*ones(4*2+1,3)
-w_mfiplr[1:2*4,1] .= 10.
-w_mfiplr = [w_mfiplr;[zeros(4) 0.1*ones(4) 0.1*ones(4)]]
-for a=0:2
-    d = D[(D.Site.=="MFIP-LR") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="MFIP-LR") .& (C.Arm.==a),:]
-    mfiplr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-# MFIP-RA
-mfipra = zeros(4*3+1,3)
-w_mfipra = 100*ones(4*2+1,3)
-w_mfipra[1:2*4,1] .= 10.
-#w_mfipra[:,3] .= 0.
-w_mfipra = [w_mfipra;[zeros(4) 0.1*ones(4) 0.1*ones(4)]]
-
-for a=0:2
-    d = D[(D.Site.=="MFIP-RA") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="MFIP-RA") .& (C.Arm.==a),:]
-    mfipra[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-# NEWWS-A
-newwsa = zeros(5*3+1,2)
-w_newwsa = 100*ones(5*2+1,2)
-w_newwsa[1:5*2,1] .= 10.
-w_newwsa = [w_newwsa;[zeros(5) 0.1*ones(5)]]
-for a=0:1
-    d = D[(D.Site.=="Atlanta") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="NEWWS-A") .& (C.Arm.==a),:]
-    newwsa[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-# NEWWS-G
-newwsg = zeros(5*3+1,2)
-w_newwsg = 100*ones(5*2+1,2)
-w_newwsg[1:5*2,1] .= 10.
-w_newwsg = [w_newwsg;[zeros(5) 0.1*ones(5)]]
-for a=0:1
-    d = D[(D.Site.=="GR") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="NEWWS-G") .& (C.Arm.==a),:]
-    newwsg[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-# NEWWS-R
-newwsr = zeros(5*3+1,2)
-w_newwsr = 100*ones(5*2+1,2)
-w_newwsr[1:5*2,1] .= 10.
-w_newwsr = [w_newwsr;[zeros(5) 0.1*ones(5)]]
-
-for a=0:1
-    d = D[(D.Site.=="Riverside") .& (D.Treatment.==a),:]
-    c = C[(C.Site.=="NEWWS-R") .& (C.Arm.==a),:]
-    newwsr[:,a+1] = [d.Participation/100;d.LFP/100;c.UsePaid[1];d.TotInc/52]
-end
-
-moments = (CTJF = ctjf, FTP = ftp, LAGAIN = LA, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr)
-# later one we can let the relative sample sizes inform the weights if we want
-wghts = (CTJF = w_ctjf, FTP = w_ftp, LAGAIN = w_LA, MFIPLR = w_mfiplr, MFIPRA = w_mfipra, NEWWSA = w_newwsa, NEWWSG = w_newwsg, NEWWSR = w_newwsr)
 
 moms_collect = []
-for i=1:8
-    sname = site_list[i]
-    moms = []
-    T = site_features.T[i]
-    println(sname)
-    for a = 1:site_features.n_arms[i]
+for i=1:num_sites
+    moms = zeros(2*years[i]+1,n_arms[i])
+    se = zeros(2*years[i]+1,n_arms[i])
+    println(site_list[i])
+    for a=1:n_arms[i]
         d = D[(D.Site.==site_str2[i]) .& (D.Treatment.==(a-1)),:]
-        d = d[1:T,:]
         c = C[(C.Site.==site_str[i]) .& (C.Arm.==(a-1)),:]
-        append!(moms,[(Part = d.Participation/100,LFP = d.LFP/100,Care = c.UsePaid[1],Inc = d.TotInc/52)])
+        moms[:,a] = [d.Participation[1:years[i]]/100; d.LFP[1:years[i]]/100; c.UsePaid[1]]
+        se[:,a] = sqrt.(2*(moms[:,a].*(1 .- moms[:,a]))/sample_size[i])
+        se[end,a] = (moms[end,a]*(1-moms[end,a])/c.N[1])
     end
-    append!(moms_collect,[moms])
+    append!(moms_collect,[(moms=moms,se=se)])
 end
-data_moments = (;zip(site_list,moms_collect)...)
+moments = (;zip(site_list,moms_collect)...)
+
+#
+#
+# moms_collect = []
+# for i=1:8
+#     sname = site_list[i]
+#     moms = []
+#     T = site_features.T[i]
+#     println(sname)
+#     for a = 1:site_features.n_arms[i]
+#         d = D[(D.Site.==site_str2[i]) .& (D.Treatment.==(a-1)),:]
+#         d = d[1:T,:]
+#         c = C[(C.Site.==site_str[i]) .& (C.Arm.==(a-1)),:]
+#         append!(moms,[(Part = d.Participation/100,LFP = d.LFP/100,Care = c.UsePaid[1],Inc = d.TotInc/52)])
+#     end
+#     append!(moms_collect,[moms])
+# end
+# data_moments = (;zip(site_list,moms_collect)...)
