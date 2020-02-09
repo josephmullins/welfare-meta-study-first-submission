@@ -192,6 +192,7 @@ end
 
 # variable cases:
 #vlist = [:αc, :αH, :αA, :σH, :σC, :αWR,:αWR2, :αF, :β,:wq,:gN]
+# MISTAKE: αc,σH,σC are supposed to have a log normal prior!
 function LogPrior(xh,xm,mpars,hpars,var)
     if var==:αH
         αH = xm[mpars.pos.αH]
