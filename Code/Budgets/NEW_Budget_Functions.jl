@@ -1,5 +1,5 @@
-#cd("/Users/FilipB/github/welfare-meta-study/Code")
-cd("/home/joseph/GitHub/welfare-meta-study/Code")
+cd("/Users/FilipB/github/welfare-meta-study/Code")
+#cd("/home/joseph/GitHub/welfare-meta-study/Code")
 
 using CSV
 using GLM
@@ -221,7 +221,7 @@ Benefit ./= 12. #<- convert to monthly
 
 
 
-function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP)
+function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefit=Benefit, SNAP=SNAP, eligible=1)
 
 
         FS=SNAP[nk,site, q]
@@ -230,7 +230,7 @@ function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefi
 
 
         # multiplying deductions by 12--lets us view the old monthly numbers
-    Welfare=participation*(max(Ben-(1-0.33)*max(earnings-120,0),0))
+    Welfare=eligible*participation*(max(Ben-(1-0.33)*max(earnings-120,0),0))
     FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
     Budget=Welfare+FoodStamps+earnings
 
@@ -241,7 +241,7 @@ function AFDC(q, nk, earnings,participation,site; Pov_Guidelines=Poverty, Benefi
 
 end
 
-function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
+function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP, eligible=1)
 
         FS=SNAP[nk,3, q]
         Ben=Benefit[nk,3,q]
@@ -253,10 +253,10 @@ function MFIP(q, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP)
     #Benefits=Welfare+FoodStamps
 
     # "correct" the max allotment to ensure AFDC and MFIP non-working get the same payment
-    FS_MFIP = FS - 0.3*max(Ben-134,0) # modified food stamps for MFIP
+    FS_MFIP = FS - 0.3*max(eligible*Ben-134,0) # modified food stamps for MFIP
     FS_AFDC=max(FS-0.3*max(0.8*earnings-134,0),0 ) # AFDC rules
 
-    D=Ben+FS_MFIP
+    D=eligible*Ben+FS_MFIP
     MFIP=max( min(1.2*D-(1-0.38)*earnings,D)  ,0)
 
     Welfare=0
@@ -330,7 +330,7 @@ c1=@where(CaliRules,:Year.==1,:NumKids.==1)
 c1.MaxBenefit[1]
 
 
-function LA_GAIN(year, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP, CaliRules=CaliRules)
+function LA_GAIN(year, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP, CaliRules=CaliRules, eligible=1)
 
     NST=0
     MaxBen=0
@@ -343,7 +343,7 @@ function LA_GAIN(year, nk, earnings, participation; Benefit=Benefit, SNAP=SNAP, 
         MaxBen=cal.MaxBenefit[1]
     end
 
-    Welfare=participation*max(  min(MaxBen, NST-(1-0.33)*max(earnings-120,0)),0)
+    Welfare=eligible*participation*max(  min(MaxBen, NST-(1-0.33)*max(earnings-120,0)),0)
     FoodStamps=participation*(max(FS-0.3*max(0.8*earnings+Welfare-134,0),0))
     Budget=Welfare+FoodStamps+earnings
     Benefits=Welfare+FoodStamps
@@ -454,6 +454,13 @@ MN_RA_Budget=zeros(2,Program_Lengths[3],4,2,2) # arms, years, kids from 0 to 3, 
 MN_LR_Benefits=zeros(2,Program_Lengths[4],4,2,2) # just welfare benefits and food stamps
 MN_RA_Benefits=zeros(2,Program_Lengths[4],4,2,2) # just welfare benefits and food stamps
 
+
+MN_LR_Budget_Ineligible=zeros(2,Program_Lengths[3],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+MN_RA_Budget_Ineligible=zeros(2,Program_Lengths[3],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+MN_LR_Benefits_Ineligible=zeros(2,Program_Lengths[4],4,2,2) # just welfare benefits and food stamps
+MN_RA_Benefits_Ineligible=zeros(2,Program_Lengths[4],4,2,2) # just welfare benefits and food stamps
+
+
 Program_Lengths
 for years in 1:Program_Lengths[3]
     for kids in 1:4 # kids=1 implies no kids
@@ -463,19 +470,39 @@ for years in 1:Program_Lengths[3]
                         Arm1=AFDC(years, kids, Earnings[3,years]*working[w], participating[p],3)
                         Arm2=MFIP(years, kids, Earnings[3,years]*working[w], participating[p])
 
+                        Arm1_c=AFDC(years, kids, Earnings[3,years]*working[w], participating[p],3; eligible=0)
+                        Arm2_c=MFIP(years, kids, Earnings[3,years]*working[w], participating[p];eligible=0)
+
+
                         MN_LR_Budget[1,years,kids,p, w]=Arm1.Budget
                         MN_LR_Budget[2,years,kids,p, w]=Arm2.Budget
                         MN_LR_Benefits[1,years,kids,p, w]=Arm1.Benefits
                         MN_LR_Benefits[2,years,kids,p, w]=Arm2.Benefits
 
+
+
+                        MN_LR_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                        MN_LR_Budget_Ineligible[2,years,kids,p, w]=Arm2_c.Budget
+                        MN_LR_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
+                        MN_LR_Benefits_Ineligible[2,years,kids,p, w]=Arm2_c.Benefits
+
                         # Site 3 is LR, 4 is RA
                         Arm1=AFDC(years, kids, Earnings[4,years]*working[w], participating[p],4)
                         Arm2=MFIP(years, kids, Earnings[4,years]*working[w], participating[p])
+
+                        Arm1_c=AFDC(years, kids, Earnings[4,years]*working[w], participating[p],4; eligible=0)
+                        Arm2_c=MFIP(years, kids, Earnings[4,years]*working[w], participating[p];eligible=0)
 
                     MN_RA_Budget[1,years,kids,p, w]=Arm1.Budget
                     MN_RA_Budget[2,years,kids,p, w]=Arm2.Budget
                     MN_RA_Benefits[1,years,kids,p, w]=Arm1.Benefits
                     MN_RA_Benefits[2,years,kids,p, w]=Arm2.Benefits
+
+                    MN_RA_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                    MN_RA_Budget_Ineligible[2,years,kids,p, w]=Arm2_c.Budget
+                    MN_RA_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
+                    MN_RA_Benefits_Ineligible[2,years,kids,p, w]=Arm2_c.Benefits
+
 
 
             end
@@ -490,8 +517,15 @@ MN_LR_Budget[1,:,:,:,1].-MN_LR_Budget[2,:,:,:,1]
 writedlm("Budgets/MFIP_LR_MAIN",MN_LR_Budget)
 writedlm("Budgets/MFIP_LR_BENEFITS",MN_LR_Benefits)
 
+
+writedlm("Budgets/MFIP_LR_MAIN_INELIGIBLE",MN_LR_Budget_Ineligible)
+writedlm("Budgets/MFIP_LR_BENEFITS_INELIGIBLE",MN_LR_Benefits_Ineligible)
+
 writedlm("Budgets/MFIP_RA_MAIN",MN_RA_Budget)
 writedlm("Budgets/MFIP_RA_BENEFITS",MN_RA_Benefits)
+
+writedlm("Budgets/MFIP_RA_MAIN_INELIGIBLE",MN_RA_Budget_Ineligible)
+writedlm("Budgets/MFIP_RA_BENEFITS_INELIGIBLE",MN_RA_Benefits_Ineligible)
 
 MN_RA_Budget[1,:,:,:,1].-MN_RA_Budget[2,:,:,:,1]
 
@@ -500,6 +534,10 @@ MN_RA_Budget[1,:,:,:,1].-MN_RA_Budget[2,:,:,:,1]
 
 LA_Budget=zeros(2,Program_Lengths[5],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
 LA_Benefits=zeros(2,Program_Lengths[5],4,2,2)
+
+LA_Budget_Ineligible=zeros(2,Program_Lengths[5],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+LA_Benefits_Ineligible=zeros(2,Program_Lengths[5],4,2,2)
+
 Program_Lengths[5]
 
 for years in 1:3#Program_Lengths[5]
@@ -512,12 +550,23 @@ for years in 1:3#Program_Lengths[5]
                             Arm1=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site)
                             Arm2=LA_GAIN(years, kids, Earnings[site,years]*working[w], participating[p])
 
+                            Arm1_c=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site; eligible=0)
+                            Arm2_c=LA_GAIN(years, kids, Earnings[site,years]*working[w], participating[p];eligible=0)
+
                         LA_Budget[1,years,kids,p, w]=Arm1.Budget
                         LA_Budget[2,years,kids,p, w]=Arm2.Budget
 
 
                         LA_Benefits[1,years,kids,p, w]=Arm1.Benefits
                         LA_Benefits[2,years,kids,p, w]=Arm2.Benefits
+
+
+                        LA_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                        LA_Budget_Ineligible[2,years,kids,p, w]=Arm2_c.Budget
+
+
+                        LA_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
+                        LA_Benefits_Ineligible[2,years,kids,p, w]=Arm2_c.Benefits
 
 
 
@@ -529,12 +578,19 @@ end
 writedlm("Budgets/LAGAIN_MAIN",LA_Budget)
 writedlm("Budgets/LAGAIN_BENEFITS",LA_Benefits)
 
+writedlm("Budgets/LAGAIN_MAIN_INELIGIBLE",LA_Budget_Ineligible)
+writedlm("Budgets/LAGAIN_BENEFITS_INELIGIBLE",LA_Benefits_Ineligible)
+
 
 # Atlanta budget matrices
 
 
 ATL_Budget=zeros(1,Program_Lengths[6],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
 ATL_Benefits=zeros(1,Program_Lengths[6],4,2,2) # just welfare benefits and food stamps
+
+
+ATL_Budget_Ineligible=zeros(1,Program_Lengths[6],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+ATL_Benefits_Ineligible=zeros(1,Program_Lengths[6],4,2,2) # just welfare benefits and food stamps
 
 
 for years in 1:Program_Lengths[6]
@@ -544,10 +600,14 @@ for years in 1:Program_Lengths[6]
                         site=6
                             # Arm 1 is control, arm 2 is treatment
                             Arm1=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site)
+                            Arm1_c=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site; eligible=0)
 
 
                         ATL_Budget[1,years,kids,p, w]=Arm1.Budget
                         ATL_Benefits[1,years,kids,p, w]=Arm1.Benefits
+
+                        ATL_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                        ATL_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
 
             end
         end
@@ -559,12 +619,19 @@ ATL_Benefits
 writedlm("Budgets/NEWWS_A_MAIN",ATL_Budget)
 writedlm("Budgets/NEWWS_A_BENEFITS",ATL_Benefits)
 
+writedlm("Budgets/NEWWS_A_MAIN_INELIGIBLE",ATL_Budget_Ineligible)
+writedlm("Budgets/NEWWS_A_BENEFITS_INELIGIBLE",ATL_Benefits_Ineligible)
+
 
 # GR budget matrices
 
 
 GR_Budget=zeros(1,Program_Lengths[7],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
 GR_Benefits=zeros(1,Program_Lengths[7],4,2,2) # just welfare benefits and food stamps
+
+
+GR_Budget_Ineligible=zeros(1,Program_Lengths[7],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+GR_Benefits_Ineligible=zeros(1,Program_Lengths[7],4,2,2) # just welfare benefits and food stamps
 
 for years in 1:Program_Lengths[7]
     for kids in 1:4 # kids=1 implies no kids
@@ -573,10 +640,15 @@ for years in 1:Program_Lengths[7]
                         site=7
                             # Arm 1 is control, arm 2 is treatment
                             Arm1=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site)
+                            Arm1_c=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site; eligible=0)
 
 
                         GR_Budget[1,years,kids,p, w]=Arm1.Budget
                         GR_Benefits[1,years,kids,p, w]=Arm1.Benefits
+
+
+                        GR_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                        GR_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
 
             end
         end
@@ -586,10 +658,19 @@ end
 writedlm("Budgets/NEWWS_G_MAIN",GR_Budget)
 writedlm("Budgets/NEWWS_G_BENEFITS",GR_Benefits)
 
+
+writedlm("Budgets/NEWWS_G_MAIN_INELIGIBLE",GR_Budget_Ineligible)
+writedlm("Budgets/NEWWS_G_BENEFITS_INELIGIBLE",GR_Benefits_Ineligible)
+
 # Riverside budget matrices
 
 Riverside_Budget=zeros(1,Program_Lengths[8],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
 Riverside_Benefits=zeros(1,Program_Lengths[8],4,2,2) # just welfare benefits and food stamps
+
+
+
+Riverside_Budget_Ineligible=zeros(1,Program_Lengths[8],4,2,2) # arms, years, kids from 0 to 3, participation choice, work choice
+Riverside_Benefits_Ineligible=zeros(1,Program_Lengths[8],4,2,2) # just welfare benefits and food stamps
 
 for years in 1:Program_Lengths[8]
     for kids in 1:4 # kids=1 implies no kids
@@ -598,10 +679,14 @@ for years in 1:Program_Lengths[8]
                         site=8
                             # Arm 1 is control, arm 2 is treatment
                             Arm1=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site)
+                            Arm1_c=AFDC(years, kids, Earnings[site,years]*working[w], participating[p],site;eligible=0)
 
 
                         Riverside_Budget[1,years,kids,p, w]=Arm1.Budget
                         Riverside_Benefits[1,years,kids,p, w]=Arm1.Benefits
+
+                        Riverside_Budget_Ineligible[1,years,kids,p, w]=Arm1_c.Budget
+                        Riverside_Benefits_Ineligible[1,years,kids,p, w]=Arm1_c.Benefits
 
             end
         end
@@ -610,4 +695,8 @@ end
 
 writedlm("Budgets/NEWWS_R_MAIN",Riverside_Budget)
 writedlm("Budgets/NEWWS_R_BENEFITS",Riverside_Benefits)
+
+writedlm("Budgets/NEWWS_R_MAIN_INELIGIBLE",Riverside_Budget_Ineligible)
+writedlm("Budgets/NEWWS_R_BENEFITS_INELIGIBLE",Riverside_Benefits_Ineligible)
+
 Riverside_Budget
