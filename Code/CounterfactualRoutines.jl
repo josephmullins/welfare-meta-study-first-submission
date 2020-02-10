@@ -83,7 +83,7 @@ function GetEffects(x,pars,budget,site_features)
         sname = site_features.site_list[i]
         #println(sname)
         Y = getfield(budget,sname)
-        #Y_I = budget[Symbol(sname,"_I")]
+        Y_I = budget[Symbol(sname,"_I")]
         moms = getfield(moments,sname)
         π0 = site_features.π0[i,:,:]
         year_meas = site_features.year_meas[i]
@@ -92,7 +92,7 @@ function GetEffects(x,pars,budget,site_features)
         #moms_control = GetMoments(pars_site,Y[1,:,:,:,:],price,0,T,π0,year_meas)
         # GetEffects(pars,Y,Y_fs,price,T,NK)
         NK = size(π0)[1]
-        EffectA[i,:,1:T],EffectH[i,:,1:T],ElastA[i,:,1:T],ElastH[i,:,1:T],ElastF[i,:,1:T] = GetEffects(pars_site,Y[1,:,:,:,:],Y[1,:,:,:,:],price,T,NK,π0)
+        EffectA[i,:,1:T],EffectH[i,:,1:T],ElastA[i,:,1:T],ElastH[i,:,1:T],ElastF[i,:,1:T] = GetEffects(pars_site,Y[1,:,:,:,:],Y_I[1,:,:,:,:],price,T,NK,π0)
     end
     return EffectA,EffectH,ElastA,ElastH,ElastF
 end

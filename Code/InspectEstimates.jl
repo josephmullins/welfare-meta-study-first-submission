@@ -25,7 +25,12 @@ for i=1:nb
     EffectA[i,:,:,:],EffectH[i,:,:,:],ElastA[i,:,:,:],ElastH[i,:,:,:],ElastF[i,:,:,:] = GetEffects(Pm[:,i],mpars,budget,site_features)
 end
 
+# save these results to file
+for i=1:8
+    LFP = 
 
+
+break
 # Write Gobal Parameters to file
 # αC, σH,σC,σF, β,w_q
 vlist1 = [:αc,:σH,:σC,:wq,:β]
