@@ -505,7 +505,7 @@ end
 
 
 
-function InspectModelFit2(model_moments,data_moments,site_features,site_list;Part=true, inc=false)
+function InspectModelFit2(model_moments,data_moments,site_features,site_list;lfp=false, inc=false)
     colors = ["blue","green","red"]
     for i=1:8
         T = site_features.T[i]
@@ -513,8 +513,8 @@ function InspectModelFit2(model_moments,data_moments,site_features,site_list;Par
         moms0 = getfield(data_moments,sname)
         moms1 = getfield(model_moments,sname)
         for a=1:site_features.n_arms[i]
-            v=ifelse(Part==false,:LFP,:Part)
-            v=ifelse(inc==true,:Inc,:Part)
+            v=ifelse(lfp==true,:LFP,:Part)
+            v=ifelse(inc==true,:Inc,v)
                 figure(String(v))
                 subplot(2,4,i)
                 PyPlot.title(String(sname))
@@ -542,10 +542,10 @@ gcf()
 
 # compare lfp
 clf()
-LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, Part=false)
+LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, lfp=true)
 gcf()
 clf()
-LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, Part=false)
+LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, lfp=true)
 gcf()
 
 
