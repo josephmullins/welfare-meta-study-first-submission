@@ -3,6 +3,7 @@ include("MCMCRoutines.jl")
 include("CounterfactualRoutines.jl")
 include("SetupBaseline.jl")
 using Printf
+using Random
 Γ = readdlm("FirstStageSIPP/Gamma_est")[:]
 gF = readdlm("FirstStageSIPP/gF")[:] #<- we need to figure this out and decide what we're doing!!!
 
@@ -14,21 +15,45 @@ Ph = readdlm("BaselineChainHyper")
 
 # test
 nsite = length(site_features.site_list)
-nb = 10
+nb = 100
 EffectA = zeros(nb,nsite,2,5)
 EffectH = zeros(nb,nsite,2,5)
 ElastA = zeros(nb,nsite,2,5)
 ElastH = zeros(nb,nsite,2,5)
 ElastF = zeros(nb,nsite,2,5)
 
-for i=1:nb
-    EffectA[i,:,:,:],EffectH[i,:,:,:],ElastA[i,:,:,:],ElastH[i,:,:,:],ElastF[i,:,:,:] = GetEffects(Pm[:,i],mpars,budget,site_features)
+
+Random.seed!(202020)
+#ii = rand(10000:50000,nb)
+for j=1:nb
+    i = rand(10000:50000)
+    EffectA[j,:,:,:],EffectH[j,:,:,:],ElastA[j,:,:,:],ElastH[j,:,:,:],ElastF[j,:,:,:] = GetEffects(Pm[:,i],mpars,budget,site_features)
 end
 
 # save these results to file
+D = DataFrame()
+E = DataFrame()
 for i=1:8
-    LFP = 
+    T = site_features.T[i]
 
+    d1=DataFrame(year=1:T,var="Participation",Site=site_str[i],case="Work Requirement",Effect=mean(EffectA[:,i,1,1:T],dims=1)[:],lb=[quantile(EffectA[:,i,1,t],0.025) for t=1:T],ub=[quantile(EffectA[:,i,1,t],0.975) for t=1:T])
+    d2=DataFrame(year=1:T,var="Participation",Site=site_str[i],case="Time Limit",Effect=mean(EffectA[:,i,2,1:T],dims=1)[:],lb=[quantile(EffectA[:,i,2,t],0.025) for t=1:T],ub=[quantile(EffectA[:,i,2,t],0.975) for t=1:T])
+    append!(D,[d1;d2])
+    d1=DataFrame(year=1:T,var="LFP",Site=site_str[i],case="Work Requirement",Effect=mean(EffectH[:,i,1,1:T],dims=1)[:],lb=[quantile(EffectH[:,i,1,t],0.025) for t=1:T],ub=[quantile(EffectH[:,i,1,t],0.975) for t=1:T])
+    d2=DataFrame(year=1:T,var="LFP",Site=site_str[i],case="Time Limit",Effect=mean(EffectH[:,i,2,1:T],dims=1)[:],lb=[quantile(EffectH[:,i,2,t],0.025) for t=1:T],ub=[quantile(EffectH[:,i,2,t],0.975) for t=1:T])
+    append!(D,[d1;d2])
+
+    e1=DataFrame(year=1:T,var="Formal Care",Site=site_str[i],case="Wage Change",Elasticity=mean(ElastF[:,i,1,1:T],dims=1)[:]/0.1,lb=[quantile(ElastF[:,i,1,t],0.025)/0.1 for t=1:T],ub=[quantile(ElastF[:,i,1,t],0.975)/0.1 for t=1:T])
+    e2=DataFrame(year=1:T,var="Formal Care",Site=site_str[i],case="Price Change",Elasticity=mean(ElastF[:,i,2,1:T],dims=1)[:]/0.1,lb=[quantile(ElastF[:,i,2,t],0.025)/0.1 for t=1:T],ub=[quantile(ElastF[:,i,2,t],0.975)/0.1 for t=1:T])
+    append!(E,[e1;e2])
+    e1=DataFrame(year=1:T,var="LFP",Site=site_str[i],case="Wage Change",Elasticity=mean(ElastH[:,i,1,1:T],dims=1)[:]/0.1,lb=[quantile(ElastH[:,i,1,t],0.025)/0.1 for t=1:T],ub=[quantile(ElastH[:,i,1,t],0.975)/0.1 for t=1:T])
+    e2=DataFrame(year=1:T,var="LFP",Site=site_str[i],case="Price Change",Elasticity=mean(ElastH[:,i,2,1:T],dims=1)[:]/0.1,lb=[quantile(ElastH[:,i,2,t],0.025)/0.1 for t=1:T],ub=[quantile(ElastH[:,i,2,t],0.975)/0.1 for t=1:T])
+    append!(E,[e1;e2])
+
+
+end
+CSV.write("/Users/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/Effects.csv",D)
+CSV.write("/Users/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/Elasticities.csv",E)
 
 break
 # Write Gobal Parameters to file

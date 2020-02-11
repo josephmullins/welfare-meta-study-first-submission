@@ -58,8 +58,10 @@ function GetElasticities(pA,pWork,pF,π0)
                 mass0 = (1-pA[1][t,nk,1+a0])*pWork[1][t,nk,1+a0,1]
                 e1 = (pF[2][t,nk,1+a0,2]-pF[1][t,nk,1+a0,2])/pF[1][t,nk,1+a0,2]
                 e0 = (pF[2][t,nk,1+a0,1]-pF[1][t,nk,1+a0,1])/pF[1][t,nk,1+a0,1]
-                numerator += π0[nk,a0+1]*(mass1*e1+mass0*e0)
-                denom += π0[nk,a0+1]*(mass0+mass1)
+                if a0<=9
+                    numerator += π0[nk,a0+1]*(mass1*e1+mass0*e0)
+                    denom += π0[nk,a0+1]*(mass0+mass1)
+                end
 			end
 		end
         EF[t] = numerator/denom
