@@ -38,3 +38,5 @@ Pm2,Ph2,Amhist2,Ahhist2,Lhist2 = GetChainMod(5000,mres[2],hres[2],mlist,hlist,mp
 Pm3,Ph3,Amhist3,Ahhist3,Lhist3 = GetChainMod(50000,mres[2],hres[2],mlist,hlist,mpars,hpars,budget,moments,site_features)
 
 #Pm2,Ph2,Amhist2,Ahhist2,Lhist2 = GetChainMod(10000,Pm[:,end],Ph[:,end],mlist,hlist,mpars,hpars,budget,moments,site_features)
+writedlm("BaselineChainHyper",Ph3)
+writedlm("BaselineChain",Pm3);

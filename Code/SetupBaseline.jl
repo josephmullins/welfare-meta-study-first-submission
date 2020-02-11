@@ -59,16 +59,23 @@ ctjf_ben = reshape(readdlm("Budgets/CTJF_BENEFITS"),2,4,4,2,2)/4 #<- this isn't 
 ctjf_inel = reshape(readdlm("Budgets/CTJF_INELIGIBLE"),2,4,4,2,2)/4
 ctjf_inel[2,:,:,:,1] .= 0
 lagain = reshape(readdlm("Budgets/LAGAIN_MAIN"),2,3,4,2,2)/4
+lagain_inel = reshape(readdlm("Budgets/LAGAIN_MAIN_INELIGIBLE"),2,3,4,2,2)/4
 ftp = reshape(readdlm("Budgets/FTP_MAIN"),2,5,4,2,2)/4
 ftp_inel = reshape(readdlm("Budgets/FTP_INELIGIBLE"),2,5,4,2,2)/4
 ftp_inel[2,:,:,:,1] .= 0
 # fix mfip budgets
 mfiplr = reshape(readdlm("Budgets/MFIP_LR_MAIN"),2,4,4,2,2)/4
+mfiplr_inel = reshape(readdlm("Budgets/MFIP_LR_MAIN_INELIGIBLE"),2,4,4,2,2)/4
 mfipra = reshape(readdlm("Budgets/MFIP_RA_MAIN"),2,4,4,2,2)/4
+mfipra_inel = reshape(readdlm("Budgets/MFIP_RA_MAIN_INELIGIBLE"),2,4,4,2,2)/4
 newwsa = reshape(readdlm("Budgets/NEWWS_A_MAIN"),1,5,4,2,2)/4
 newwsg = reshape(readdlm("Budgets/NEWWS_G_MAIN"),1,5,4,2,2)/4
 newwsr = reshape(readdlm("Budgets/NEWWS_R_MAIN"),1,5,4,2,2)/4
-budget = (CTJF = ctjf, FTP = ftp, LAGAIN = lagain, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr,FTP_I = ftp_inel,CTJF_I = ctjf_inel)
+newwsa_inel = reshape(readdlm("Budgets/NEWWS_A_MAIN_INELIGIBLE"),1,5,4,2,2)/4
+newwsg_inel = reshape(readdlm("Budgets/NEWWS_G_MAIN_INELIGIBLE"),1,5,4,2,2)/4
+newwsr_inel = reshape(readdlm("Budgets/NEWWS_R_MAIN_INELIGIBLE"),1,5,4,2,2)/4
+
+budget = (CTJF = ctjf, FTP = ftp, LAGAIN = lagain, MFIPLR = mfiplr, MFIPRA = mfipra, NEWWSA = newwsa, NEWWSG = newwsg, NEWWSR = newwsr,FTP_I = ftp_inel,CTJF_I = ctjf_inel, LAGAIN_I = lagain_inel, MFIPLR_I = mfiplr_inel, MFIPRA_I = mfipra_inel, NEWWSA_I = newwsa_inel, NEWWSG_I = newwsg_inel, NEWWSR_I = newwsr_inel)
 num_sites = length(site_list)
 
 # ------------ Set up moments and wghts ---------------- #
