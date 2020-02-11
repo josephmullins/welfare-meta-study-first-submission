@@ -68,7 +68,7 @@ io = open("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Tables/Est
 for i=1:5
     s = vstring1[i]
     ii = mpars.pos[vlist1[i]]
-    ests = [quantile(Pm[ii,5000:end],0.025),quantile(Pm[ii,5000:end],0.25),mode(Pm[ii,5000:end]),quantile(Pm[ii,5000:end],0.75),quantile(Pm[ii,5000:end],0.975)]
+    ests = [quantile(Pm[ii,20000:end],0.025),quantile(Pm[ii,20000:end],0.25),mode(Pm[ii,20000:end]),quantile(Pm[ii,20000:end],0.75),quantile(Pm[ii,20000:end],0.975)]
     #println(ests)
     for j=1:5
         s = string(s," & ",@sprintf("%0.2f",ests[j]))
@@ -80,7 +80,7 @@ end
 for i=1:10
     s = vstring2[i]
     ii = hpars.pos[vlist2[i]]
-    ests = [quantile(Ph[ii,5000:end],0.025),quantile(Ph[ii,5000:end],0.25),mode(Ph[ii,5000:end]),quantile(Ph[ii,5000:end],0.75),quantile(Ph[ii,5000:end],0.975)]
+    ests = [quantile(Ph[ii,20000:end],0.025),quantile(Ph[ii,20000:end],0.25),mode(Ph[ii,20000:end]),quantile(Ph[ii,20000:end],0.75),quantile(Ph[ii,20000:end],0.975)]
     #println(ests)
     for j=1:5
         s = string(s," & ",@sprintf("%0.2f",ests[j]))
@@ -88,9 +88,30 @@ for i=1:10
     s = string(s,"\\\\")
     write(io,s)
 end
-
-
 close(io)
 
 
 # αA,σA,αH,σH,α_F,σ_F,αR,σR,αR2,σR2
+# write to table site-specific parameters
+vlist = [:αH,:αA,:αF,:αWR,:αWR2]
+vstring2 = ["\$\\alpha_H\$","\$\\alpha_A\$","\$\\alpha_F\$","\$\\alpha_{WR}\$","\$\\alpha_{WR2}\$"]
+io = open("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Tables/SiteEstsTable.tex", "w");
+for i=1:8
+    s = site_str[i]
+    for j=1:5
+        ii = mpars.pos[vlist[j]][i]
+        est = mode(Pm[ii,20000:end])
+        s = string(s," & ",@sprintf("%0.2f",est))
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+    s = ""
+    for j=1:5
+        ii = mpars.pos[vlist[j]][i]
+        sdev = std(Pm[ii,20000:end])
+        s = string(s," & ","(",@sprintf("%0.2f",sdev),")")
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+end
+close(io)
