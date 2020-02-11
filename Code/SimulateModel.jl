@@ -25,6 +25,92 @@ pars = UpdatePars(best_pars,pars,vlist)
 site_list
 sample_size=[4803, 1405+1410,15683,3208,6009,4433,4554,8322]
 
+site_features.yb
+budget.CTJF[1,:,:,:,:]
+1
+
+# This block of code sets up some things I use to test the functions below
+αHT = [0;pars.αHT]
+yb = site_features.yb[3]
+T = site_features.T[3]
+years = (yb+1-1991):(yb-1991+T)
+pos = sum(site_features.T[1:1-1])
+#αH = pars.αH[(pos+1):(pos+site_features.T[i])]
+pars_site = GetSitePars(pars,3)
+sname = site_list[3]
+Y = getfield(budget,sname)
+moms = getfield(moments,sname)
+#π0_a = site_features.π0[2,2,:]
+#sum(π0_a)
+#π01a = site_features.π0[:,:,:]
+#π01 = site_features.π0[1,:,:]
+year_meas = site_features.year_meas[3]
+Abar = size(Y)[3]
+moms_model = zeros(size(moms))
+WR = site_features.work_reqs[3,2]
+price = site_features.prices[3,2]
+abar = min(Abar,2)
+#Y_I = budget[Symbol(sname,"_I")]
+TLlength = site_features.TLlength[3,2]
+NK =3# size(π01)[3]
+pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[abar,:,:,:,:],price,WR,T,NK)
+#pA2,pWork2,pF2 = GetDynamicProbs(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,NK,TLlength)
+# end test code prep
+
+
+
+#=
+
+CTJF: 4969
+    - CTJF samples ALL kids at last year
+
+FTP: 3698/1108
+    - FTP gives choice of last year for all kids or all sample for focal kid
+
+MFIPLR: 879
+    - Seems to be for all kids, not at last year
+MFIPRA: 587
+    - Does not seem to list sample sizes?
+
+LAGAIN: 372+374
+    - Asks if EVER used child care
+
+
+NEWWSA: 580/650 LFA/HCD
+NEWWSG: 394/380 LFA/HCD
+NEWWSR: 492/405 LFA/HCD, 312 LFA no degree
+
+    - All NEWWS were in past week for focal child
+
+None of these specified less than 9!
+=#
+
+#kid_sample_size=[4969, ]
+
+(π0[1,:,:]*ones(17))'*[1,2,3]
+
+mean_nk=zeros(8)
+
+for i in 1:8
+    mean_nk[i]=(π0[i,:,:]*ones(17))'*[1,2,3]
+end
+
+C = CSV.read("../Data/ChildCareMoms_estimated.csv")
+
+formal_sample_size=zeros(8,3)
+
+site_str = ["CTJF","FTP","LAGAIN","MFIP-LR","MFIP-RA","NEWWS-A","NEWWS-G","NEWWS-R"]
+
+for i in 1:8
+    for j in 1:(site_features.n_arms[i])
+        c = C[(C.Site.==site_str[i]) .& (C.Arm.==j-1),:]
+        formal_sample_size[i,j]=c.N[1]
+    end
+end
+
+formal_sample_size[1,3]
+1
+
  # old was [4803,1405+1410,3208,6009]
 
  # I got the numbers for NEWWS from line 139, and for LAGAIN from 374
@@ -73,9 +159,10 @@ function draw_kids(site,site_features)
 
     return nk, age
 end
+1
 
 
-function decisions_static(t,nk, age,pA,pWork,pF)
+function decisions_static(t,nk, age,pA,pWork,pF,budget_mat)
 
     A=0
     W=0
@@ -96,11 +183,13 @@ function decisions_static(t,nk, age,pA,pWork,pF)
         F=1
     end
 
-    return A,W,F
+    Y=budget_mat[t, nk,A+1,W+1] # pretty sure it's time, numkids, part, work
+
+    return A,W,F, Y
 end
+1
 
-
-function decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
+function decisions_dynamic(t,nk,age,tl,pA,pWork, pF,budget_mat)
     A=0
     W=0
     F=0
@@ -120,15 +209,22 @@ function decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
         F=1
     end
 
-    return A,W,F
+    Y=budget_mat[t, nk,A+1,W+1] # pretty sure it's time, numkids, part, work
+
+    return A,W,F,Y
 end
+1
 
 
-function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,site_features)
+function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,site_features,kid_length, budget_mat)
 
     A_mat=zeros(T,nsims, sample_size_site)
     A_sims=zeros(T,nsims)
     A=zeros(T)
+
+    Y_mat=zeros(T,nsims, sample_size_site)
+    Y_sims=zeros(T,nsims)
+    Y=zeros(T)
 
 
     W_mat=zeros(T,nsims, sample_size_site)
@@ -147,8 +243,9 @@ function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,s
                                 nk, age=draw_kids(site,site_features)
                                 a=age
                                     @inbounds  for t in 1:T
-                                                    A_mat[t,n,i],W_mat[t,n,i],F0=decisions_static(t,nk, age,pA,pWork,pF)
-                                                        if (a>=1) & (a<=10)
+                                                    A_mat[t,n,i],W_mat[t,n,i],F0,Y_mat[t,n,i]=decisions_static(t,nk, age,pA,pWork,pF,budget_mat)
+
+                                                        if (a>=1) & (a<=10) &  (n<=kid_length)
                                                             F_mat[t,n,i]=F0
                                                             W_mat_2[t,n,i]=W_mat[t,n,i]
                                                         end
@@ -161,20 +258,26 @@ function Moments_Simulated_Static(nsims, pA,pWork,pF, sample_size_site,T, site,s
         @inbounds @simd for n in 1:nsims
             A_sims[t,n]=mean(A_mat[t,n,:])
             W_sims[t,n]=mean(W_mat[t,n,:])
+            Y_sims[t,n]=mean(Y_mat[t,n,:])
         end
             A[t]=mean(A_sims[t,:])
             W[t]=mean(W_sims[t,:])
+            Y[t]=mean(Y_sims[t,:])
     end
     F=sum(F_mat)/sum(W_mat_2)
 
-    return A,W,F
+    return A,W,F,Y
 end
+1
 
-
-function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site, tlsite,site_features)
+function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site, tlsite,site_features,kid_length, budget_mat, budget_mat_inel)
     A_mat=zeros(T,nsims, sample_size_site)
     A_sims=zeros(T,nsims)
     A=zeros(T)
+
+    Y_mat=zeros(T,nsims, sample_size_site)
+    Y_sims=zeros(T,nsims)
+    Y=zeros(T)
 
     W_mat=zeros(T,nsims, sample_size_site)
     W_mat_2=zeros(T,nsims, sample_size_site)
@@ -182,6 +285,7 @@ function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site,
     W=zeros(T)
 
     F_mat=zeros(T,nsims, sample_size_site)
+    F0=0
 
     # child care only for kids in ages 0:9
     @inbounds @simd for n in 1:nsims
@@ -190,8 +294,14 @@ function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site,
                             nk, age=draw_kids(site,site_features)
                             a=age
                                 @inbounds for t in 1:T
-                                        A_mat[t,n,i],W_mat[t,n,i],F0=decisions_dynamic(t,nk,age,tl,pA,pWork, pF)
-                                            if (a>=1) & (a<=10)
+                                    if tl==tlsite+1
+                                        A_mat[t,n,i],W_mat[t,n,i],F0,Y_mat[t,n,i]=decisions_dynamic(t,nk,age,tl,pA,pWork, pF, budget_mat_inel)
+
+                                    else
+                                        A_mat[t,n,i],W_mat[t,n,i],F0,Y_mat[t,n,i]=decisions_dynamic(t,nk,age,tl,pA,pWork, pF, budget_mat)
+
+                                    end
+                                            if (a>=1) & (a<=10) & (n<=kid_length)
                                                     F_mat[t,n,i]=F0
                                                     W_mat_2[t,n,i]=W_mat[t,n,i]
                                                 end
@@ -206,18 +316,21 @@ function Moments_Simulated_Dynamic(nsims, pA,pWork,pF, sample_size_site,T, site,
         @inbounds @simd for n in 1:nsims
                             A_sims[t,n]=mean(A_mat[t,n,:])
                             W_sims[t,n]=mean(W_mat[t,n,:])
+                            Y_sims[t,n]=mean(Y_mat[t,n,:])
                         end
                             A[t]=mean(A_sims[t,:])
                             W[t]=mean(W_sims[t,:])
+                            Y[t]=mean(Y_sims[t,:])
                     end
 
     F=sum(F_mat)/sum(W_mat_2)
 
-    return A,W,F
+    return A,W,F,Y
 
 end
+1
 
-function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_features,nsims,sample_size; seed=1234, wrapped=false)
+function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_features,nsims,sample_size,formal_sample_size; seed=1234, wrapped=false)
     Random.seed!(seed)
     moms_collect = []
     Qn = 0
@@ -249,12 +362,13 @@ function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_feat
         pA1,pWork1,pF1 = GetStaticProbs(pars_site,Y[1,:,:,:,:],price,WR,T,NK) # last 3 are WR, T, NK
 
 
-        A,W,F=Moments_Simulated_Static(nsims, pA1,pWork1,pF1,  ssize2,T, i,site_features)
-        moms_control = [A;W;F]
+        A,W,F,Inc=Moments_Simulated_Static(nsims, pA1,pWork1,pF1,  ssize2,T, i,site_features, formal_sample_size[i,1],Y[1,:,:,:,:])
+
+        moms_control = [A;W;F;Inc]
         Qn += sum(wght[:,1].*(moms[:,1] .- moms_control).^2)
 
         if wrapped==true
-            append!(moms_model, [(Part=A,LFP=W,Care=F)])
+            append!(moms_model, [(Part=A,LFP=W,Inc=Inc,Care=F)])
         else
             moms_model[:,1]=moms_control
         end
@@ -269,20 +383,21 @@ function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_feat
                 Y_I = budget[Symbol(sname,"_I")]
                 TLlength = site_features.TLlength[i,a]
                 pA2,pWork2,pF2 = GetDynamicProbs(pars_site,Y[abar,:,:,:,:],Y_I[abar,:,:,:,:],price,WR,T,NK,TLlength)
-                A,W,F=Moments_Simulated_Dynamic(nsims,pA2,pWork2,pF2,  ssize2,T,i,TLlength,site_features)#(nsims, pA,pF,pWork, π1, sample_size_site,T, site, tlsite,site_features)
-                moms_treatment = [A;W;F]
+                println(nsims)
+                A,W,F,Inc=Moments_Simulated_Dynamic(nsims,pA2,pWork2,pF2,  ssize2,T,i,TLlength,site_features, formal_sample_size[i,abar],Y[abar,:,:,:,:],Y_I[abar,:,:,:,:])#(nsims, pA,pF,pWork, π1, sample_size_site,T, site, tlsite,site_features)
+                moms_treatment = [A;W;F;Inc]
 
                 if wrapped==true
-                    append!(moms_model, [(Part=A,LFP=W,Care=F)])
+                    append!(moms_model, [(Part=A,LFP=W,Inc=Inc,Care=F)])
                 else
                     moms_model[:,a]=moms_treatment
                 end
             else
                 pA3,pWork3,pF3 = GetStaticProbs(pars_site,Y[abar,:,:,:,:],price,WR,T,NK)
-                A,W,F=Moments_Simulated_Static(nsims,pA3,pWork3,pF3, ssize2,T, i,site_features)
-                moms_treatment = [A;W;F]
+                A,W,F,Inc=Moments_Simulated_Static(nsims,pA3,pWork3,pF3, ssize2,T, i,site_features, formal_sample_size[i,a],Y[abar,:,:,:,:])
+                moms_treatment = [A;W;F;Inc]
                 if wrapped==true
-                    append!(moms_model, [(Part=A,LFP=W,Care=F)])
+                    append!(moms_model, [(Part=A,LFP=W,Inc=Inc,Care=F)])
                 else
                     moms_model[:,a]=moms_treatment
                 end
@@ -296,15 +411,25 @@ function Get_Simulated_MomentsAll(pars1,site_list,budget,moments,wghts,site_feat
     return Qn, (;zip(site_list,moms_collect)...)
 end
 
+fit_sim, moms_sim_optimized=
+    Get_Simulated_MomentsAll(pars,site_list,budget,moments,wghts,
+    site_features,1,sample_size, formal_sample_size; wrapped=false)
 
+CriterionP(pars,site_list,budget,moments,wghts,site_features)
 
 # check with optimized params
-
+moments.CTJF
 
 opt,x0 = GetOptimization(pars,vlist,site_list,budget,moments,wghts,site_features)
 res2 = optimize(opt,x0)
 pars2 = UpdatePars(res2[2],pars,vlist)
-fit_sim, moms_sim_optimized=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=false)
+fit_sim, moms_sim_optimized=
+    Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,
+    site_features,5,sample_size, formal_sample_size; wrapped=false)
+
+
+
+
 CriterionP(pars2,site_list,budget,moments,wghts,site_features)
 moms_diff_optimized=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 
@@ -320,12 +445,12 @@ bootstrapped SE code
 =#
 
 
-length1=10
+length1=1
 success_vec=[]
 param_mat=zeros(length(res2[2]), length1)
 
 @time for s in 1:length1
-    fit_sim, moms_sim_optimized_bootstrap=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=false, seed=s)
+    fit_sim, moms_sim_optimized_bootstrap=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size, formal_sample_size; wrapped=false, seed=s)
     opt2,x2 = GetOptimization(pars2,vlist,site_list,budget,moms_sim_optimized_bootstrap,wghts,site_features)
     @time res3 = optimize(opt2,x2)
     println(res3[3])
@@ -374,13 +499,13 @@ for i in 1:length1
     df.i=param_mat[:,i]
     rename!(df, Dict(:i =>"sim_$i"))
 end
-CSV.write("Bootstrap/Bootstrap_params.csv",df)
-df2=CSV.read("Bootstrap/Bootstrap_params.csv")
+*CSV.write("Bootstrap/Bootstrap_params.csv",df)
+*df2=CSV.read("Bootstrap/Bootstrap_params.csv")
 
 
 
 
-function InspectModelFit2(model_moments,data_moments,site_features,site_list;Part=true)
+function InspectModelFit2(model_moments,data_moments,site_features,site_list;lfp=false, inc=false)
     colors = ["blue","green","red"]
     for i=1:8
         T = site_features.T[i]
@@ -388,7 +513,8 @@ function InspectModelFit2(model_moments,data_moments,site_features,site_list;Par
         moms0 = getfield(data_moments,sname)
         moms1 = getfield(model_moments,sname)
         for a=1:site_features.n_arms[i]
-            v=ifelse(Part==true,:Part,:LFP)
+            v=ifelse(lfp==true,:LFP,:Part)
+            v=ifelse(inc==true,:Inc,v)
                 figure(String(v))
                 subplot(2,4,i)
                 PyPlot.title(String(sname))
@@ -400,11 +526,12 @@ function InspectModelFit2(model_moments,data_moments,site_features,site_list;Par
 end
 
 
-fit_sim, moms_sim_optimized=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size; wrapped=true)
+fit_sim, moms_sim_optimized=Get_Simulated_MomentsAll(pars2,site_list,budget,moments,wghts,site_features,1,sample_size, formal_sample_size; wrapped=true)
 CriterionP(pars2,site_list,budget,moments,wghts,site_features)
 moms_diff_optimized=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 
 
+InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list)
 # compare participation
 clf()
 Participation_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list)
@@ -415,8 +542,26 @@ gcf()
 
 # compare lfp
 clf()
-LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, Part=false)
+LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, lfp=true)
 gcf()
 clf()
-LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, Part=false)
+LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, lfp=true)
 gcf()
+
+
+# compare inc
+clf()
+LFP_Diff=InspectModelFit2(moms_diff_optimized,data_moments,site_features,site_list, inc=true)
+gcf()
+clf()
+LFP_Sim=InspectModelFit2(moms_sim_optimized,data_moments,site_features,site_list, inc=true)
+gcf()
+
+moms_diff_optimized.MFIPLR[1].Care
+
+
+
+
+
+
+moms_sim_optimized.MFIPLR[1].Care
