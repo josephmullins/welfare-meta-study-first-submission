@@ -314,6 +314,7 @@ end
 
 function GetChoiceProbsAll(pars,site_list,budget,site_features)
     probs_collect = []
+    NK = size(site_features.π0)[2]
     for i=1:length(site_list)
         yb = site_features.yb[i]
         T = site_features.T[i]

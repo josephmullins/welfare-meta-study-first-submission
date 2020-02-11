@@ -60,7 +60,7 @@ pars2 = UpdatePars(res2[2],pars,vlist)
 # opt,x0=GetOptimization(pars2,vlist2,site_list,budget,moments,wghts,site_features)
 # res2 = optimize(opt,x0)
 # pars2 = UpdatePars(res2[2],pars,vlist2)
-
+writedlm("current_ests",res2[2])
 
 moms=GetMomentsAll(pars2,site_list,budget,moments,wghts,site_features)
 #InspectTreatFit(moms,data_moments,site_features,site_list)

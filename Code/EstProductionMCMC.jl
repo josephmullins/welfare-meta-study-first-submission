@@ -1,6 +1,7 @@
 # this assumes we have run the script "SetupBaseline.jl"
 include("ProductionEstimation.jl")
 include("MCMCRoutines.jl")
+using Distributions
 #measures = [:PB,:Repeat]#,:Read,:BelowRead] #,:BPI]
 measures = [:Achievement,:Repeat,:Math,:Read] #,:Math]#,:Math,:Read] #<- could we possibly get more data here?
 #measures = [:BPI,:PB] #,:Suspend]
@@ -68,3 +69,51 @@ for i=1:8
     subplot(2,4,i)
     hist(P[i,2000:end],density=true)
 end
+
+
+writedlm("EstsChainSchool",P)
+
+measures = [:BPI,:PB,:Suspend]
+moms_collect = []
+for v in measures; SE[v] = coalesce.(SE[v],Inf); end
+for s in site_list
+    m = D[D.Site.==String(s),:]
+    se = SE[SE.Site.==String(s),:]
+    TE_ = m[:,measures]
+    se_ = se[:,measures]
+    tevar = convert(Array{Float64,2},se[:,measures]).^2
+    N = convert(Array{Float64,1},m.N_control+m.N_treat)
+    tevar = 4 ./N
+    wght = ones(1,length(measures)) ./tevar
+    Idrop = [ismissing.(TE_[v])[:] for v in measures] #convert(Array{Bool,2},ismissing.(TE))
+    TE = zeros(size(TE_)) #convert(Array{Float64,2},coalesce.(TE,0.))
+    SE_ = zeros(size(TE_))
+    for i=1:length(measures)
+        TE[:,i] = convert(Array{Float64,1},coalesce.(TE_[measures[i]],0.) ./se[measures[i]])
+        wght[Idrop[i],i] .= 0.
+        SE_[:,i] = sqrt.(4 ./N)
+    end
+    if s.==:MFIPRA
+        wght .= 0.
+    end
+    arm = convert(Array{Int64,1},m.Treatment) .+ 1
+    a0 = convert(Array{Int64,1},m.AgeMin)
+    a1 = convert(Array{Int64,1},m.AgeMax)
+    append!(moms_collect,[(TE=TE,SE=SE_,wght=wght,arm=arm,a0=a0,a1=a1)])
+end
+
+
+TEmoms = (;zip(site_list,moms_collect)...)
+
+
+
+x0,pars_bayes = ParsBayes(length(measures))
+P,Ahist,Lhist = GetChain(5000,x0,vlist,pars_bayes,CP,site_list,budget,TEmoms,site_features)
+
+for i=1:8
+    subplot(2,4,i)
+    hist(P[i,2000:end],density=true)
+end
+
+
+writedlm("EstsChainBehave",P)
