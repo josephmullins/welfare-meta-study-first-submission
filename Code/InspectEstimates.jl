@@ -118,3 +118,11 @@ for i=1:8
     write(io,s)
 end
 close(io)
+
+pmod = GetModParameters(post_est,mpars)
+P = readdlm("EstsChainSchool")
+
+TE = zeros(100,8,5,2,2);
+for i=1:100
+    TE[i,:,:,:,:] = GetChildEffects(P[:,2000+10*i],pmod,budget,site_features);
+end
