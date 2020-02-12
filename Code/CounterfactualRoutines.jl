@@ -40,23 +40,24 @@ end
 function GetChildEffects(pars_prod,pars,Y,Y_fs,price,T,NK,π0)
     pA,pWork,pF = GetStaticProbs(pars,Y,price,0,T,NK)
     # four counterfactuals to work through
+    wq = 1.
     TH = zeros(T,3,NK,17)
     for t=1:T
-        TH[t,1,:,:] = GetChildOutcomesStatic(t,pA,pWork,pF,Y,pars_prod,price,pars.wq)
+        TH[t,1,:,:] = GetChildOutcomesStatic(t,pA,pWork,pF,Y,pars_prod,price,wq)
     end
 
     # 1 - Work requirement
     pA1,pWork1,pF1 = GetStaticProbs(pars,Y,price,1,T,NK)
     for t=1:T
-        TH[t,2,:,:] = GetChildOutcomesStatic(t,pA1,pWork1,pF1,Y,pars_prod,price,pars.wq)
+        TH[t,2,:,:] = GetChildOutcomesStatic(t,pA1,pWork1,pF1,Y,pars_prod,price,wq)
     end
 
     # 2 - Extra thousand dollars per year
     Yalt = copy(Y);
     Yalt .+= 1000/52
-    pA1,pWork1,pF1 = GetStaticProbs(pars,Yalt,price,1,T,NK)
+    pA1,pWork1,pF1 = GetStaticProbs(pars,Yalt,price,0,T,NK)
     for t=1:T
-        TH[t,3,:,:] = GetChildOutcomesStatic(t,pA1,pWork1,pF1,Y,pars_prod,price,pars.wq)
+        TH[t,3,:,:] = GetChildOutcomesStatic(t,pA1,pWork1,pF1,Yalt,pars_prod,price,wq)
     end
 
     # 2 - time limit
