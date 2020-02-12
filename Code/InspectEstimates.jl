@@ -13,6 +13,9 @@ xh0,hpars = HyperPars()
 Pm = readdlm("BaselineChain")
 Ph = readdlm("BaselineChainHyper")
 
+post_est = [mode(Pm[i,20000:end]) for i=1:size(Pm)[1]]
+writedlm("posterior_ests",post_est)
+
 # test
 nsite = length(site_features.site_list)
 nb = 100

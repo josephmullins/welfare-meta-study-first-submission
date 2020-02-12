@@ -37,6 +37,28 @@ function GetEffects(pars,Y,Y_fs,price,T,NK,π0)
     return EffectA,EffectH,ElastA,ElastH,ElastF
 end
 
+function GetChildEffects(pars,Y,Y_fs,price,T,NK,π0)
+    pA,pWork,pF = GetStaticProbs(pars,Y,price,0,T,NK)
+    # four counterfactuals to work through
+    TH0 = zeros(T,NK,17)
+    for t=1:T
+        TH0[t,:,:] = GetChildOutcomesStatic(t,pA,pWork,pF,Y,pars_prod,price,pars.wq)
+    end
+
+    # 1 - Work requirement
+    pA1,pWork1,pF1 = GetStaticProbs(pars,Y,price,1,T,NK)
+    TH1 = zeros(T,NK,17)
+    for t=1:T
+        TH1[t,:,:] = GetChildOutcomesStatic(t,pA1,pWork1,pF1,Y,pars_prod,price,pars.wq)
+    end
+
+    # 2 - time limit
+    #pA1,pWork1,pF1 = GetDynamicProbs(pars,Y,Y_fs,price,0,T,NK,5)
+    #EA1,EH1,c = GetDynamicMoments(pA1,pWork1,pF1,π0,1,0,9)
+    #EffectA[2,:] = EA1 .- EA0
+    #EffectH[2,:] = EH1 .- EH0
+
+end
 # plan for calculating elasticity of formal care! When age<=5? Most useful.
 # need to make a decision about it.
 function GetElasticities(pA,pWork,pF,π0)
