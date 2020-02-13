@@ -2,6 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(reshape)
+library(tikzDevice)
 setwd("~/GitHub/welfare-meta-study/Data/")
 D <- read.csv("ChildCareMoms.csv") %>% mutate(Subs = Subs/Emp, OOP = CPI*OOP/(Emp/100*UsePaid/100)) #, UsePaid = UsePaid/Emp)
 ggplot(D,aes(x=Subs,y=UsePaid)) + geom_point() + geom_smooth(method="lm")
@@ -18,11 +19,21 @@ summary(mod1)
 mod2 <- lm(log(OOP) ~ log(Subs),D)
 summary(mod2)
 
-ggplot(D,aes(x=log(Subs),y=log(OOP))) + geom_point() + geom_smooth(method="lm",se=FALSE)
+g = ggplot(D,aes(x=log(Subs),y=log(OOP),size=sqrt(N))) + geom_point(alpha=0.5) + geom_smooth(method="lm",se=FALSE)
+tikz(file = "~/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/SubsByOOP.tex",width=4,height = 3)
+print(g + theme_minimal()+ theme(legend.position = "none"))
+dev.off()
+
 D$Price = exp(predict(mod2))
 D$Price2 = predict(mod1)
 
 write.csv(D,"ChildCareMoms_estimated.csv")
+
+g = ggplot(D,aes(x=log(Price),y=log(UsePaid),size=sqrt(N))) + geom_point(alpha=0.5) + geom_smooth(method="lm",se=FALSE)
+tikz(file = "~/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/UseByPrice.tex",width=4,height = 3)
+print(g + theme_minimal() + theme(legend.position = "none"))
+dev.off()
+
 
 
 mod3 <- lm(UsePaid ~ Price2,D)
@@ -32,7 +43,7 @@ summary(mod3)
 summary(mod4)
 summary(mod5)
 #ok
-ggplot(D,aes(x=log(OOP),y=log(UsePaid))) + geom_point() + geom_smooth(method="lm",se=FALSE)
+ggplot(D,aes(x=log(Price),y=log(UsePaid))) + geom_point() + geom_smooth(method="lm",se=FALSE)
 
 mod3 <- lm(UsePaid ~ Subs,D)
 mod4 <- lm(log(UsePaid) ~ log(Subs),D)

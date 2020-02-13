@@ -120,8 +120,7 @@ end
 close(io)
 
 pmod = GetModParameters(post_est,mpars)
-#P = readdlm("EstsChainBehave")
-P = readdlm("EstsChainSchool")
+P = readdlm("EstsChainBehave")
 
 TE = zeros(100,8,5,2,2);
 for i=1:100
@@ -131,7 +130,7 @@ end
 D = DataFrame()
 
 ages = ["0-5","6-12"]
-cases = ["Work Requirement","+\$1000"]
+cases = ["Work Requirement","+\\\$1000"]
 
 for i=1:8
     T = site_features.T[i]
@@ -142,4 +141,28 @@ for i=1:8
         end
     end
 end
-CSV.write("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/ChildEffects.csv",D)
+CSV.write("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/ChildEffectsBehave.csv",D)
+
+P = readdlm("EstsChainSchool")
+
+
+TE = zeros(100,8,5,2,2);
+for i=1:100
+    TE[i,:,:,:,:] = GetChildEffects(P[:,2000+10*i],pmod,budget,site_features);
+end
+
+D = DataFrame()
+
+ages = ["0-5","6-12"]
+cases = ["Work Requirement","+\\\$1000"]
+
+for i=1:8
+    T = site_features.T[i]
+    for j=1:2
+        for k=1:2
+            d=DataFrame(year=1:T,Age=ages[j],Site=site_str[i],case=cases[k],Effect=mean(TE[:,i,1:T,j,k],dims=1)[:],lb=[quantile(TE[:,i,t,j,k],0.025) for t=1:T],ub=[quantile(TE[:,i,t,j,k],0.975) for t=1:T])
+            append!(D,d)
+        end
+    end
+end
+CSV.write("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/ChildEffectsSchool.csv",D)
