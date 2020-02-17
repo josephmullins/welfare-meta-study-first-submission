@@ -122,6 +122,36 @@ close(io)
 pmod = GetModParameters(post_est,mpars)
 P = readdlm("EstsChainBehave")
 
+# --- Write estimates to table
+pstring = ["\$\\delta_{I,0-9}\$","\$\\delta_{I,10+}\$","\$\\delta_{\\theta}\$","\$g_{1,0-9}\$","\$g_{1,10+}\$","\$g_{2,0-9}\$","\$g_{2,10+}\$"]
+mstring = ["Positive Behaviors","Suspension"]
+
+io = open("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Tables/ProdEstsBehave.tex", "w");
+
+for i=1:7
+    s = pstring[i]
+    ests = [quantile(P[i,2000:end],0.025),quantile(P[i,2000:end],0.25),mean(P[i,2000:end]),quantile(P[i,2000:end],0.75),quantile(P[i,2000:end],0.975)]
+    #println(ests)
+    for j=1:5
+        s = string(s," & ",@sprintf("%0.2f",ests[j]))
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+end
+write(io,"Behavioral Problems & - & - & - & - & - \\\\")
+for i=1:2
+    s = mstring[i]
+    ests = [quantile(P[7+i,2000:end],0.025),quantile(P[7+i,2000:end],0.25),mean(P[7+i,2000:end]),quantile(P[7+i,2000:end],0.75),quantile(P[7+i,2000:end],0.975)]
+    #println(ests)
+    for j=1:5
+        s = string(s," & ",@sprintf("%0.2f",ests[j]))
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+end
+close(io)
+
+# --- Calculate counterfactuals
 TE = zeros(100,8,5,2,2);
 for i=1:100
     TE[i,:,:,:,:] = GetChildEffects(P[:,2000+10*i],pmod,budget,site_features);
@@ -144,6 +174,33 @@ end
 CSV.write("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Figures/ChildEffectsBehave.csv",D)
 
 P = readdlm("EstsChainSchool")
+mstring = ["Grade Repetition","WJ-Math","WJ-Read"]
+# -- Write estimates to table
+
+io = open("/home/joseph/Dropbox/Research Projects/WelfareMetaAnalysis/Tables/ProdEstsSchool.tex", "w");
+
+for i=1:7
+    s = pstring[i]
+    ests = [quantile(P[i,2000:end],0.025),quantile(P[i,2000:end],0.25),mean(P[i,2000:end]),quantile(P[i,2000:end],0.75),quantile(P[i,2000:end],0.975)]
+    #println(ests)
+    for j=1:5
+        s = string(s," & ",@sprintf("%0.2f",ests[j]))
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+end
+write(io,"Achievement & - & - & - & - & - \\\\")
+for i=1:3
+    s = mstring[i]
+    ests = [quantile(P[7+i,2000:end],0.025),quantile(P[7+i,2000:end],0.25),mode(P[7+i,2000:end]),quantile(P[7+i,2000:end],0.75),quantile(P[7+i,2000:end],0.975)]
+    #println(ests)
+    for j=1:5
+        s = string(s," & ",@sprintf("%0.2f",ests[j]))
+    end
+    s = string(s,"\\\\")
+    write(io,s)
+end
+close(io)
 
 
 TE = zeros(100,8,5,2,2);
